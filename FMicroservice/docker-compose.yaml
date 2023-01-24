@@ -2,8 +2,14 @@ version: '3'
 services:
   web:
     build: .
+    image: ovantsevich/fmicroservice:review
     ports:
       - "11111:12345"
+    environment:
+      - CURRENT_DB=postgres
+      - MONGO_DB_URL=_
+      - JWT_KEY=874967EC3EA3490F8F2EF6478B72A756
+      - POSTGRES_DB_URL=postgres://postgres:postgres@host.docker.internal:5432/entity?sslmode=disable
     depends_on:
       postgres:
         condition: service_healthy

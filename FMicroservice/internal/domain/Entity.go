@@ -2,9 +2,9 @@ package domain
 
 type (
 	Entity struct {
-		ID        int    `sql:"primary_key"`
-		Name      string `json:"name" sql:"type:varchar(50)"`
-		Age       int    `json:"age" sql:"type:integer"`
-		IsDeleted bool   `sql:"type:boolean"`
+		ID        int    `json:"id"`
+		Name      string `json:"name" validate:"required"`
+		Age       int    `json:"age" validate:"gte=0,lte=100"`
+		IsDeleted bool   `json:"is_deleted"`
 	}
 )

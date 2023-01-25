@@ -7,7 +7,7 @@ import (
 	. "github.com/OVantsevich/GolangInternship/FMicroservice/internal/handler"
 	. "github.com/OVantsevich/GolangInternship/FMicroservice/internal/repository"
 	. "github.com/OVantsevich/GolangInternship/FMicroservice/internal/service"
-	"github.com/go-playground/validator"
+	"github.com/go-playground/validator/v10"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -27,6 +27,7 @@ func (cv *CustomValidator) Validate(i interface{}) error {
 	if err := cv.validator.Struct(i); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
+
 	return nil
 }
 
@@ -95,15 +96,15 @@ func main() {
 	}
 	defer ClosePool(cfg, repos)
 
-	service := NewEntityService(&repos)
-	handler := NewEntityHandler(service)
+	service := NewUserService(&repos)
+	handler := NewUserHandler(service)
 
 	e.Validator = &CustomValidator{validator: validator.New()}
 
-	e.POST("/entity", handler.CreateEntity)
-	e.GET("/entity", handler.GetEntityByName)
-	e.PUT("/entity", handler.UpdateEntity)
-	e.DELETE("/entity", handler.DeleteEntity)
+	e.POST("/User", handler.CreateUser)
+	e.GET("/User", handler.GetUserByName)
+	e.PUT("/User", handler.UpdateUser)
+	e.DELETE("/User", handler.DeleteUser)
 
 	e.GET("/", func(c echo.Context) error {
 		return c.File("index.html")

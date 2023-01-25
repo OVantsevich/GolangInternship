@@ -16,7 +16,7 @@ func NewConfig() (*Config, error) {
 	//}
 
 	Cfg.CurrentDB = "postgres"
-	Cfg.PostgresUrl = "postgres://postgres:postgres@host.docker.internal:5432/entity?sslmode=disable"
+	Cfg.PostgresUrl = "postgres://postgres:postgres@host.docker.internal:5432/User?sslmode=disable"
 	Cfg.MongoURL = "mongodb://mongo:mongo@host.docker.internal:27017"
 	Cfg.JwtKey = "874967EC3EA3490F8F2EF6478B72A756"
 	return Cfg, nil

@@ -9,14 +9,14 @@ services:
       - CURRENT_DB=postgres
       - MONGO_DB_URL=mongodb://mongo:mongo@host.docker.internal:27017
       - JWT_KEY=874967EC3EA3490F8F2EF6478B72A756
-      - POSTGRES_DB_URL=postgres://postgres:postgres@host.docker.internal:5432/entity?sslmode=disable
+      - POSTGRES_DB_URL=postgres://postgres:postgres@host.docker.internal:5432/User?sslmode=disable
     depends_on:
       postgres:
         condition: service_healthy
   postgres:
     image: postgres
     environment:
-      POSTGRES_DB: 'entity'
+      POSTGRES_DB: 'User'
       POSTGRES_USER: 'postgres'
       POSTGRES_PASSWORD: 'postgres'
     healthcheck:

@@ -14,6 +14,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"io"
 	"net/http"
 	"os"
 )
@@ -27,6 +28,40 @@ func (cv *CustomValidator) Validate(i interface{}) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 	return nil
+}
+
+func upload(c echo.Context) error {
+	name := c.FormValue("name")
+	email := c.FormValue("email")
+
+	//-----------
+	// Read file
+	//-----------
+
+	// Source
+	file, err := c.FormFile("file")
+	if err != nil {
+		return err
+	}
+	src, err := file.Open()
+	if err != nil {
+		return err
+	}
+	defer src.Close()
+
+	// Destination
+	dst, err := os.Create(file.Filename)
+	if err != nil {
+		return err
+	}
+	defer dst.Close()
+
+	// Copy
+	if _, err = io.Copy(dst, src); err != nil {
+		return err
+	}
+
+	return c.HTML(http.StatusOK, fmt.Sprintf("<p>File %s uploaded successfully with fields name=%s and email=%s.</p>", file.Filename, name, email))
 }
 
 func main() {
@@ -69,6 +104,14 @@ func main() {
 	e.GET("/entity", handler.GetEntityByName)
 	e.PUT("/entity", handler.UpdateEntity)
 	e.DELETE("/entity", handler.DeleteEntity)
+
+	e.GET("/", func(c echo.Context) error {
+		return c.File("index.html")
+	})
+	e.GET("/file", func(c echo.Context) error {
+		return c.File("file.svg")
+	})
+	e.POST("/upload", upload)
 
 	e.Logger.Fatal(e.Start(":12345"))
 }

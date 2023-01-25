@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>File download</title>
+</head>
+<body>
+
+<p>
+    <a href="/file">File download</a>
+</p>
+
+<h1>Upload single file with fields</h1>
+
+<form action="/upload" method="post" enctype="multipart/form-data">
+    Name: <input type="text" name="name"><br>
+    Email: <input type="email" name="email"><br>
+    Files: <input type="file" name="file"><br><br>
+    <input type="submit" value="Submit">
+</form>
+
+</body>
+</html>

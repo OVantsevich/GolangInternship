@@ -2,12 +2,12 @@ version: '3'
 services:
   web:
     build: .
-    image: ovantsevich/fmicroservice:review
+    image: ovantsevich/fmicroservice:mongo
     ports:
       - "11111:12345"
     environment:
       - CURRENT_DB=postgres
-      - MONGO_DB_URL=_
+      - MONGO_DB_URL=mongodb://mongo:mongo@host.docker.internal:27017
       - JWT_KEY=874967EC3EA3490F8F2EF6478B72A756
       - POSTGRES_DB_URL=postgres://postgres:postgres@host.docker.internal:5432/entity?sslmode=disable
     depends_on:
@@ -28,3 +28,21 @@ services:
       - .:/docker-entrypoint-initdb.d
     ports:
       - "5432:5432"
+
+  mongo:
+    image: mongo
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: mongo
+      MONGO_INITDB_ROOT_PASSWORD: mongo
+    ports:
+      - "27017:27017"
+  mongo-express:
+    image: mongo-express
+    restart: always
+    ports:
+      - 8081:8081
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: mongo
+      ME_CONFIG_MONGODB_ADMINPASSWORD: mongo
+      ME_CONFIG_MONGODB_URL: mongodb://mongo:mongo@mongo:27017/

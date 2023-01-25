@@ -25,8 +25,8 @@ func (r *PRepository) CreateEntity(ctx context.Context, e *Entity) error {
 
 func (r *PRepository) GetEntityByName(ctx context.Context, name string) (*Entity, error) {
 	e := Entity{}
-	err := r.Pool.QueryRow(ctx, "select * from entity where name=$1 and not is_deleted", name).Scan(
-		&e.ID, &e.Name, &e.Age, &e.IsDeleted)
+	err := r.Pool.QueryRow(ctx, "select * from entity where name=$1 and not deleted", name).Scan(
+		&e.ID, &e.Name, &e.Age, &e.Deleted)
 	if err != nil {
 		return nil, fmt.Errorf("repository - PRepository - GetEntityByName: %v", err)
 	}
@@ -35,7 +35,7 @@ func (r *PRepository) GetEntityByName(ctx context.Context, name string) (*Entity
 }
 func (r *PRepository) UpdateEntity(ctx context.Context, name string, e *Entity) error {
 	var id int
-	err := r.Pool.QueryRow(ctx, "update entity set age=$1 where name=$2 and is_deleted=false returning id",
+	err := r.Pool.QueryRow(ctx, "update entity set age=$1 where name=$2 and deleted=false returning id",
 		e.Age, name).Scan(&id)
 	if err != nil {
 		return fmt.Errorf("repository - PRepository - CreateEntity: %v", err)
@@ -45,7 +45,7 @@ func (r *PRepository) UpdateEntity(ctx context.Context, name string, e *Entity) 
 }
 func (r *PRepository) DeleteEntity(ctx context.Context, name string) error {
 	var id int
-	err := r.Pool.QueryRow(ctx, "update entity set is_deleted=true where name=$1 and is_deleted=false returning id",
+	err := r.Pool.QueryRow(ctx, "update entity set deleted=true where name=$1 and deleted=false returning id",
 		name).Scan(&id)
 	if err != nil {
 		return fmt.Errorf("repository - PRepository - CreateEntity: %v", err)

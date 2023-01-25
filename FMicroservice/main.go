@@ -12,6 +12,8 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	log "github.com/sirupsen/logrus"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"net/http"
 	"os"
 )
@@ -83,6 +85,11 @@ func DBConnection(Cfg *Config) (Repository, error) {
 		}
 		return &PRepository{Pool: pool}, nil
 	case "mongo":
+		client, err := mongo.Connect(context.Background(), options.Client().ApplyURI(Cfg.MongoURL))
+		if err != nil {
+			return nil, fmt.Errorf("mongoDB connection: %v", err)
+		}
+		return &MRepository{Client: client}, nil
 	}
 	return nil, nil
 }
@@ -95,5 +102,12 @@ func ClosePool(Cfg *Config, r interface{}) {
 			pr.Pool.Close()
 		}
 	case "mongo":
+		pr := r.(MRepository)
+		if pr.Client != nil {
+			err := pr.Client.Disconnect(context.Background())
+			if err != nil {
+				log.Fatalf("mongoDB disconnecting: %v", err)
+			}
+		}
 	}
 }

@@ -8,6 +8,7 @@ import (
 	. "github.com/OVantsevich/GolangInternship/FMicroservice/internal/repository"
 	. "github.com/OVantsevich/GolangInternship/FMicroservice/internal/service"
 	"github.com/go-playground/validator/v10"
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/jackc/pgx/v5/pgxpool"
 	echojwt "github.com/labstack/echo-jwt/v4"
 	"github.com/labstack/echo/v4"
@@ -91,7 +92,12 @@ func main() {
 	}
 
 	e.Use(echojwt.WithConfig(echojwt.Config{
-		SigningKey: cfg.JwtKey,
+		KeyFunc: func(token *jwt.Token) (interface{}, error) {
+			return []byte(cfg.JwtKey), nil
+		},
+		NewClaimsFunc: func(c echo.Context) jwt.Claims {
+			return CustomClaims{}
+		},
 		Skipper: func(c echo.Context) bool {
 			if c.Path() == "/login" || c.Path() == "/signup" {
 				return true

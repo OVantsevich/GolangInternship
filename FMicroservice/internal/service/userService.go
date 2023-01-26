@@ -17,6 +17,11 @@ type UserService struct {
 	jwtKey []byte
 }
 
+type CustomClaims struct {
+	Login string
+	jwt.RegisteredClaims
+}
+
 func NewUserService(rps *Repository) *UserService {
 	return &UserService{rps: *rps}
 }
@@ -97,18 +102,25 @@ type Claims struct {
 }
 
 func (us *UserService) CreateJWT(ctx context.Context, user *User) (accessTokenStr, refreshTokenStr string, err error) {
-	accessToken := jwt.New(jwt.SigningMethodHS256)
-	claimsA := accessToken.Claims.(jwt.MapClaims)
-	claimsA["exp"] = time.Now().Add(time.Minute * 15).Unix()
-	claimsA["username"] = user.Login
+	accessClaims := &CustomClaims{
+		user.Login,
+		jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 15)),
+		},
+	}
+	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, accessClaims)
 	accessTokenStr, err = accessToken.SignedString(us.jwtKey)
 	if err != nil {
 		return "", "", fmt.Errorf("service - userService - CreateJWT: %v", err)
 	}
-	refreshToken := jwt.New(jwt.SigningMethodHS256)
-	claimsR := refreshToken.Claims.(jwt.MapClaims)
-	claimsR["username"] = user.Login
-	claimsR["exp"] = time.Now().Add(time.Hour * 5).Unix()
+
+	refreshClaims := &CustomClaims{
+		user.Login,
+		jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 15)),
+		},
+	}
+	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims)
 	refreshTokenStr, err = refreshToken.SignedString(us.jwtKey)
 	if err != nil {
 		return "", "", fmt.Errorf("service - userService - CreateJWT: %v", err)

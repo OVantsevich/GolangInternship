@@ -8,11 +8,9 @@ import (
 	"net/http"
 )
 
-type (
-	UserHandler struct {
-		es UserService
-	}
-)
+type UserHandler struct {
+	es UserService
+}
 
 type TokenResponse struct {
 	AccessToken  string `json:"access"`
@@ -24,17 +22,17 @@ func NewUserHandler(es *UserService) *UserHandler {
 }
 
 func (eh *UserHandler) Signup(c echo.Context) (err error) {
-	User := &User{}
-	if err = c.Bind(User); err != nil {
+	user := &User{}
+	if err = c.Bind(user); err != nil {
 		return
 	}
 
-	if err = c.Validate(User); err != nil {
+	if err = c.Validate(user); err != nil {
 		return
 	}
 
 	var accessToken, refreshToken string
-	if accessToken, refreshToken, err = eh.es.Signup(c.Request().Context(), User); err != nil {
+	if accessToken, refreshToken, err = eh.es.Signup(c.Request().Context(), user); err != nil {
 		return
 	}
 
@@ -45,13 +43,13 @@ func (eh *UserHandler) Signup(c echo.Context) (err error) {
 }
 
 func (eh *UserHandler) Login(c echo.Context) (err error) {
-	User := &User{}
-	if err = c.Bind(User); err != nil {
+	user := &User{}
+	if err = c.Bind(user); err != nil {
 		return
 	}
 
 	var accessToken, refreshToken string
-	if accessToken, refreshToken, err = eh.es.Login(c.Request().Context(), User.Login, User.Password); err != nil {
+	if accessToken, refreshToken, err = eh.es.Login(c.Request().Context(), user.Login, user.Password); err != nil {
 		return
 	}
 

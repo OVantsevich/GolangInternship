@@ -26,11 +26,11 @@ func (r *MRepository) CreateUser(ctx context.Context, e *User) error {
 	return nil
 }
 
-func (r *MRepository) GetUserByName(ctx context.Context, name string) (*User, error) {
+func (r *MRepository) GetUserByLogin(ctx context.Context, login string) (*User, error) {
 	e := User{}
 
 	db := r.Client.Database("User")
-	result := db.Collection("User").FindOne(ctx, bson.D{{"name", name}})
+	result := db.Collection("User").FindOne(ctx, bson.D{{"name", login}})
 	err := result.Decode(&e)
 	if err != nil {
 		return nil, fmt.Errorf("repository - MRepository - GetUserByName: %v", err)
@@ -38,10 +38,10 @@ func (r *MRepository) GetUserByName(ctx context.Context, name string) (*User, er
 
 	return &e, nil
 }
-func (r *MRepository) UpdateUser(ctx context.Context, name string, e *User) error {
+func (r *MRepository) UpdateUser(ctx context.Context, login string, e *User) error {
 	db := r.Client.Database("User")
 
-	filter := bson.D{{"name", name}}
+	filter := bson.D{{"name", login}}
 	update := bson.D{{"$set", bson.D{{"age", e.Age}}}}
 
 	_, err := db.Collection("User").UpdateOne(ctx, filter, update)
@@ -51,6 +51,21 @@ func (r *MRepository) UpdateUser(ctx context.Context, name string, e *User) erro
 
 	return nil
 }
+
+func (r *MRepository) RefreshUser(ctx context.Context, login, token string) error {
+	//db := r.Client.Database("User")
+	//
+	//filter := bson.D{{"name", login}}
+	//update := bson.D{{"$set", bson.D{{"age", e.Age}}}}
+	//
+	//_, err := db.Collection("User").UpdateOne(ctx, filter, update)
+	//if err != nil {
+	//	return fmt.Errorf("repository - MRepository - UpdateUser: %v", err)
+	//}
+
+	return nil
+}
+
 func (r *MRepository) DeleteUser(ctx context.Context, name string) error {
 	db := r.Client.Database("User")
 

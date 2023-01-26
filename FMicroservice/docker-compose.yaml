@@ -7,16 +7,17 @@ services:
       - "11111:12345"
     environment:
       - CURRENT_DB=postgres
-      - MONGO_DB_URL=mongodb://mongo:mongo@host.docker.internal:27017
+      - MONGO_DB_URL=mongodb://mongo:mongo@localhost:27017
       - JWT_KEY=874967EC3EA3490F8F2EF6478B72A756
-      - POSTGRES_DB_URL=postgres://postgres:postgres@host.docker.internal:5432/User?sslmode=disable
+      - POSTGRES_DB_URL=postgres://postgres:postgres@localhost:5432/User?sslmode=disable
     depends_on:
       postgres:
         condition: service_healthy
   postgres:
     image: postgres
     environment:
-      POSTGRES_DB: 'User'
+      PGUSER: 'postgres'
+      POSTGRES_DB: 'userService'
       POSTGRES_USER: 'postgres'
       POSTGRES_PASSWORD: 'postgres'
     healthcheck:
@@ -24,8 +25,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    volumes:
-      - .:/docker-entrypoint-initdb.d
+#    volumes:
+#      - .:/docker-entrypoint-initdb.d
     ports:
       - "5432:5432"
 

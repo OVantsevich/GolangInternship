@@ -9,6 +9,7 @@ import (
 	. "github.com/OVantsevich/GolangInternship/FMicroservice/internal/service"
 	"github.com/go-playground/validator/v10"
 	"github.com/jackc/pgx/v5/pgxpool"
+	echojwt "github.com/labstack/echo-jwt/v4"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	log "github.com/sirupsen/logrus"
@@ -89,6 +90,16 @@ func main() {
 		e.Logger.Fatal(err)
 	}
 
+	e.Use(echojwt.WithConfig(echojwt.Config{
+		SigningKey: cfg.JwtKey,
+		Skipper: func(c echo.Context) bool {
+			if c.Path() == "/login" || c.Path() == "/signup" {
+				return true
+			}
+			return false
+		},
+	}))
+
 	var repos Repository
 	repos, err = DBConnection(cfg)
 	if err != nil {
@@ -101,10 +112,11 @@ func main() {
 
 	e.Validator = &CustomValidator{validator: validator.New()}
 
-	e.POST("/User", handler.CreateUser)
-	e.GET("/User", handler.GetUserByName)
-	e.PUT("/User", handler.UpdateUser)
-	e.DELETE("/User", handler.DeleteUser)
+	e.POST("/signup", handler.Signup)
+	e.GET("/login", handler.Login)
+	e.PUT("/User", handler.Update)
+	e.DELETE("/User", handler.Delete)
+	e.GET("/refresh", handler.Refresh)
 
 	e.GET("/", func(c echo.Context) error {
 		return c.File("index.html")

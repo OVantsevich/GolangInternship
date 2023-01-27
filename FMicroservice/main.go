@@ -92,17 +92,17 @@ func main() {
 	}
 
 	e.Use(echojwt.WithConfig(echojwt.Config{
-		KeyFunc: func(token *jwt.Token) (interface{}, error) {
-			return []byte(cfg.JwtKey), nil
-		},
-		NewClaimsFunc: func(c echo.Context) jwt.Claims {
-			return CustomClaims{}
-		},
 		Skipper: func(c echo.Context) bool {
 			if c.Path() == "/login" || c.Path() == "/signup" {
 				return true
 			}
 			return false
+		},
+		KeyFunc: func(token *jwt.Token) (interface{}, error) {
+			return []byte(cfg.JwtKey), nil
+		},
+		NewClaimsFunc: func(c echo.Context) jwt.Claims {
+			return new(CustomClaims)
 		},
 	}))
 
@@ -113,7 +113,7 @@ func main() {
 	}
 	defer ClosePool(cfg, repos)
 
-	service := NewUserService(&repos)
+	service := NewUserService(&repos, cfg.JwtKey)
 	handler := NewUserHandler(service)
 
 	e.Validator = &CustomValidator{validator: validator.New()}

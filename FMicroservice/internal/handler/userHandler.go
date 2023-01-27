@@ -103,6 +103,6 @@ func (eh *UserHandler) Delete(c echo.Context) (err error) {
 
 func tokenFromContext(c echo.Context) (tokenRaw string, login string) {
 	user := c.Get("user").(*jwt.Token)
-	claims := user.Claims.(jwt.MapClaims)
-	return user.Raw, claims["login"].(string)
+	claims := user.Claims
+	return user.Raw, claims.(*CustomClaims).Login
 }

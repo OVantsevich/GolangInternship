@@ -18,12 +18,12 @@ type UserService struct {
 }
 
 type CustomClaims struct {
-	Login string
+	Login string `json:"login"`
 	jwt.RegisteredClaims
 }
 
-func NewUserService(rps *Repository) *UserService {
-	return &UserService{rps: *rps}
+func NewUserService(rps *Repository, key string) *UserService {
+	return &UserService{rps: *rps, jwtKey: []byte(key)}
 }
 
 func (us *UserService) Signup(ctx context.Context, user *User) (accessToken, refreshToken string, err error) {
@@ -105,7 +105,7 @@ func (us *UserService) CreateJWT(ctx context.Context, user *User) (accessTokenSt
 	accessClaims := &CustomClaims{
 		user.Login,
 		jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 15)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Second * 15)),
 		},
 	}
 	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, accessClaims)
@@ -117,7 +117,7 @@ func (us *UserService) CreateJWT(ctx context.Context, user *User) (accessTokenSt
 	refreshClaims := &CustomClaims{
 		user.Login,
 		jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 15)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 10)),
 		},
 	}
 	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims)

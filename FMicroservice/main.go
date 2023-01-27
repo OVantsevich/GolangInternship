@@ -3,17 +3,16 @@ package main
 import (
 	"context"
 	"fmt"
-	. "github.com/OVantsevich/GolangInternship/FMicroservice/internal/config"
-	. "github.com/OVantsevich/GolangInternship/FMicroservice/internal/handler"
-	. "github.com/OVantsevich/GolangInternship/FMicroservice/internal/repository"
-	. "github.com/OVantsevich/GolangInternship/FMicroservice/internal/service"
+	"github.com/OVantsevich/GolangInternship/FMicroservice/internal/config"
+	"github.com/OVantsevich/GolangInternship/FMicroservice/internal/handler"
+	"github.com/OVantsevich/GolangInternship/FMicroservice/internal/repository"
+	"github.com/OVantsevich/GolangInternship/FMicroservice/internal/service"
 	"github.com/go-playground/validator/v10"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/jackc/pgx/v5/pgxpool"
 	echojwt "github.com/labstack/echo-jwt/v4"
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"io"
@@ -70,25 +69,9 @@ func upload(c echo.Context) error {
 func main() {
 	e := echo.New()
 
-	var logger = log.New()
-	logger.Out = os.Stdout
-	log.SetReportCaller(true)
-	e.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
-		LogURI:    true,
-		LogStatus: true,
-		LogValuesFunc: func(c echo.Context, values middleware.RequestLoggerValues) error {
-			log.WithFields(log.Fields{
-				"URI":    values.URI,
-				"status": values.Status,
-			}).Info("request")
-
-			return nil
-		},
-	}))
-
-	cfg, err := NewConfig()
+	cfg, err := config.NewConfig()
 	if err != nil {
-		log.Fatal(err)
+		logrus.Fatal(err)
 	}
 
 	e.Use(echojwt.WithConfig(echojwt.Config{
@@ -102,27 +85,27 @@ func main() {
 			return []byte(cfg.JwtKey), nil
 		},
 		NewClaimsFunc: func(c echo.Context) jwt.Claims {
-			return new(CustomClaims)
+			return new(service.CustomClaims)
 		},
 	}))
 
-	var repos Repository
+	var repos repository.User
 	repos, err = DBConnection(cfg)
 	if err != nil {
-		log.Fatal(err)
+		logrus.Fatal(err)
 	}
 	defer ClosePool(cfg, repos)
 
-	service := NewUserService(&repos, cfg.JwtKey)
-	handler := NewUserHandler(service)
+	userService := service.NewUserService(repos, cfg.JwtKey)
+	userHandler := handler.NewUserHandler(userService)
 
 	e.Validator = &CustomValidator{validator: validator.New()}
 
-	e.POST("/signup", handler.Signup)
-	e.GET("/login", handler.Login)
-	e.PUT("/User", handler.Update)
-	e.DELETE("/User", handler.Delete)
-	e.GET("/refresh", handler.Refresh)
+	e.POST("/signup", userHandler.Signup)
+	e.GET("/login", userHandler.Login)
+	e.PUT("/User", userHandler.Update)
+	e.DELETE("/User", userHandler.Delete)
+	e.GET("/refresh", userHandler.Refresh)
 
 	e.GET("/", func(c echo.Context) error {
 		return c.File("index.html")
@@ -135,7 +118,7 @@ func main() {
 	e.Logger.Fatal(e.Start(":12345"))
 }
 
-func DBConnection(Cfg *Config) (Repository, error) {
+func DBConnection(Cfg *config.Config) (repository.User, error) {
 	switch Cfg.CurrentDB {
 	case "postgres":
 		pool, err := pgxpool.New(context.Background(), Cfg.PostgresUrl)
@@ -145,7 +128,7 @@ func DBConnection(Cfg *Config) (Repository, error) {
 		if err = pool.Ping(context.Background()); err != nil {
 			return nil, fmt.Errorf("database not responding: %v", err)
 		}
-		return &PRepository{Pool: pool}, nil
+		return &repository.PUser{Pool: pool}, nil
 	case "mongo":
 		client, err := mongo.Connect(context.Background(), options.Client().ApplyURI(Cfg.MongoURL))
 		if err != nil {
@@ -155,24 +138,24 @@ func DBConnection(Cfg *Config) (Repository, error) {
 		if err != nil {
 			return nil, fmt.Errorf("database not responding: %v", err)
 		}
-		return &MRepository{Client: client}, nil
+		return &repository.MUser{Client: client}, nil
 	}
 	return nil, nil
 }
 
-func ClosePool(Cfg *Config, r interface{}) {
+func ClosePool(Cfg *config.Config, r interface{}) {
 	switch Cfg.CurrentDB {
 	case "postgres":
-		pr := r.(PRepository)
+		pr := r.(repository.PUser)
 		if pr.Pool != nil {
 			pr.Pool.Close()
 		}
 	case "mongo":
-		pr := r.(MRepository)
+		pr := r.(repository.MUser)
 		if pr.Client != nil {
 			err := pr.Client.Disconnect(context.Background())
 			if err != nil {
-				log.Fatalf("mongoDB disconnecting: %v", err)
+				logrus.Fatalf("mongoDB disconnecting: %v", err)
 			}
 		}
 	}

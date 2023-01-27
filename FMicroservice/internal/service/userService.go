@@ -3,17 +3,15 @@ package service
 import (
 	"context"
 	"fmt"
-	. "github.com/OVantsevich/GolangInternship/FMicroservice/internal/domain"
-	. "github.com/OVantsevich/GolangInternship/FMicroservice/internal/repository"
+	"github.com/OVantsevich/GolangInternship/FMicroservice/internal/model"
+	"github.com/OVantsevich/GolangInternship/FMicroservice/internal/repository"
 	"github.com/golang-jwt/jwt/v4"
-	"github.com/labstack/echo/v4"
 	passwordvalidator "github.com/wagslane/go-password-validator"
-	"net/http"
 	"time"
 )
 
-type UserService struct {
-	rps    Repository
+type User struct {
+	rps    repository.User
 	jwtKey []byte
 }
 
@@ -22,96 +20,92 @@ type CustomClaims struct {
 	jwt.RegisteredClaims
 }
 
-func NewUserService(rps *Repository, key string) *UserService {
-	return &UserService{rps: *rps, jwtKey: []byte(key)}
+func NewUserService(rps repository.User, key string) *User {
+	return &User{rps: rps, jwtKey: []byte(key)}
 }
 
-func (us *UserService) Signup(ctx context.Context, user *User) (accessToken, refreshToken string, err error) {
+func (u *User) Signup(ctx context.Context, user *model.User) (accessToken, refreshToken string, user2 *model.User, err error) {
 
 	if err = passwordvalidator.Validate(user.Password, 50); err != nil {
-		return "", "", &echo.HTTPError{Code: http.StatusBadRequest, Message: err.Error()}
+		return "", "", nil, fmt.Errorf("userService - Signup - Validate: %w", err)
 	}
 
-	if err = us.rps.CreateUser(ctx, user); err != nil {
-		return "", "", &echo.HTTPError{Code: http.StatusInternalServerError, Message: err.Error()}
+	if user2, err = u.rps.CreateUser(ctx, user); err != nil {
+		return "", "", nil, fmt.Errorf("userService - Signup - CreateUser: %w", err)
 	}
 
-	accessToken, refreshToken, err = us.CreateJWT(ctx, user)
+	accessToken, refreshToken, err = u.CreateJWT(ctx, user)
 	if err != nil {
-		return "", "", &echo.HTTPError{Code: http.StatusInternalServerError, Message: err.Error()}
+		return "", "", nil, fmt.Errorf("userService - Signup - CreateJWT: %w", err)
 	}
 
 	return
 }
 
-func (us *UserService) Login(ctx context.Context, login, password string) (accessToken, refreshToken string, err error) {
-	var user *User
-	if user, err = us.rps.GetUserByLogin(ctx, login); err != nil {
-		return "", "", &echo.HTTPError{Code: http.StatusInternalServerError, Message: err.Error()}
+func (u *User) Login(ctx context.Context, login, password string) (accessToken, refreshToken string, err error) {
+	var user *model.User
+	if user, err = u.rps.GetUserByLogin(ctx, login); err != nil {
+		return "", "", fmt.Errorf("userService - Login - GetUserByLogin: %w", err)
 	}
 
 	if user.Password != password {
-		return "", "", &echo.HTTPError{Code: http.StatusBadRequest, Message: "invalid password"}
+		return "", "", fmt.Errorf("userService - Login - Password invalid: %w", err)
 	}
 
-	accessToken, refreshToken, err = us.CreateJWT(ctx, user)
+	accessToken, refreshToken, err = u.CreateJWT(ctx, user)
 	if err != nil {
-		return "", "", &echo.HTTPError{Code: http.StatusInternalServerError, Message: err.Error()}
+		return "", "", fmt.Errorf("userService - Login - CreateJWT: %w", err)
 	}
 
 	return
 }
 
-func (us *UserService) Refresh(ctx context.Context, login, userRefreshToken string) (accessToken, refreshToken string, err error) {
-	var user *User
+func (u *User) Refresh(ctx context.Context, login, userRefreshToken string) (accessToken, refreshToken string, err error) {
+	var user *model.User
 
-	if user, err = us.rps.GetUserByLogin(ctx, login); err != nil {
-		return "", "", &echo.HTTPError{Code: http.StatusInternalServerError, Message: err.Error()}
+	if user, err = u.rps.GetUserByLogin(ctx, login); err != nil {
+		return "", "", fmt.Errorf("userService - Refresh - GetUserByLogin: %w", err)
 	}
 
 	if user.Token != userRefreshToken {
-		return "", "", &echo.HTTPError{Code: http.StatusBadRequest, Message: "invalid token"}
+		return "", "", fmt.Errorf("userService - Refresh - Token invalid: %w", err)
 	}
 
-	accessToken, refreshToken, err = us.CreateJWT(ctx, user)
+	accessToken, refreshToken, err = u.CreateJWT(ctx, user)
 	if err != nil {
-		return "", "", &echo.HTTPError{Code: http.StatusInternalServerError, Message: err.Error()}
+		return "", "", fmt.Errorf("userService - Refresh - CreateJWT: %w", err)
 	}
 
 	return
 }
 
-func (us *UserService) Update(ctx context.Context, login string, user *User) (err error) {
-	if err = us.rps.UpdateUser(ctx, login, user); err != nil {
-		return &echo.HTTPError{Code: http.StatusInternalServerError, Message: err.Error()}
+func (u *User) Update(ctx context.Context, login string, user *model.User) (err error) {
+	if err = u.rps.UpdateUser(ctx, login, user); err != nil {
+		return fmt.Errorf("userService - Update - UpdateUser: %w", err)
 	}
 
 	return
 }
 
-func (us *UserService) Delete(ctx context.Context, login string) (err error) {
-	if err = us.rps.DeleteUser(ctx, login); err != nil {
-		return &echo.HTTPError{Code: http.StatusInternalServerError, Message: err.Error()}
+func (u *User) Delete(ctx context.Context, login string) (err error) {
+	if err = u.rps.DeleteUser(ctx, login); err != nil {
+		return fmt.Errorf("userService - Delete - DeleteUser: %w", err)
 	}
 
 	return
 }
 
-type Claims struct {
-	jwt.RegisteredClaims
-}
-
-func (us *UserService) CreateJWT(ctx context.Context, user *User) (accessTokenStr, refreshTokenStr string, err error) {
+func (u *User) CreateJWT(ctx context.Context, user *model.User) (accessTokenStr, refreshTokenStr string, err error) {
 	accessClaims := &CustomClaims{
 		user.Login,
 		jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Second * 15)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 15)),
 		},
 	}
 	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, accessClaims)
-	accessTokenStr, err = accessToken.SignedString(us.jwtKey)
+	accessTokenStr, err = accessToken.SignedString(u.jwtKey)
 	if err != nil {
-		return "", "", fmt.Errorf("service - userService - CreateJWT: %v", err)
+		return "", "", fmt.Errorf("userService - CreateJWT - SignedString: %w", err)
 	}
 
 	refreshClaims := &CustomClaims{
@@ -121,14 +115,14 @@ func (us *UserService) CreateJWT(ctx context.Context, user *User) (accessTokenSt
 		},
 	}
 	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims)
-	refreshTokenStr, err = refreshToken.SignedString(us.jwtKey)
+	refreshTokenStr, err = refreshToken.SignedString(u.jwtKey)
 	if err != nil {
-		return "", "", fmt.Errorf("service - userService - CreateJWT: %v", err)
+		return "", "", fmt.Errorf("userService - CreateJWT - SignedString: %w", err)
 	}
 
-	err = us.rps.RefreshUser(ctx, user.Login, refreshTokenStr)
+	err = u.rps.RefreshUser(ctx, user.Login, refreshTokenStr)
 	if err != nil {
-		return "", "", fmt.Errorf("service - userService - CreateJWT: %v", err)
+		return "", "", fmt.Errorf("userService - CreateJWT - RefreshUser: %w", err)
 	}
 	return
 }

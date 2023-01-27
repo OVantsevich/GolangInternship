@@ -88,7 +88,7 @@ func main() {
 
 	cfg, err := NewConfig()
 	if err != nil {
-		e.Logger.Fatal(err)
+		log.Fatal(err)
 	}
 
 	e.Use(echojwt.WithConfig(echojwt.Config{
@@ -109,7 +109,7 @@ func main() {
 	var repos Repository
 	repos, err = DBConnection(cfg)
 	if err != nil {
-		e.Logger.Fatal(err)
+		log.Fatal(err)
 	}
 	defer ClosePool(cfg, repos)
 
@@ -150,6 +150,10 @@ func DBConnection(Cfg *Config) (Repository, error) {
 		client, err := mongo.Connect(context.Background(), options.Client().ApplyURI(Cfg.MongoURL))
 		if err != nil {
 			return nil, fmt.Errorf("mongoDB connection: %v", err)
+		}
+		err = client.Ping(context.Background(), nil)
+		if err != nil {
+			return nil, fmt.Errorf("database not responding: %v", err)
 		}
 		return &MRepository{Client: client}, nil
 	}

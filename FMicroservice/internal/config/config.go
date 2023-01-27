@@ -15,7 +15,7 @@ func NewConfig() (*Config, error) {
 	//	return nil, fmt.Errorf("config - NewConfig: %v", err)
 	//}
 
-	Cfg.CurrentDB = "postgres"
+	Cfg.CurrentDB = "mongo"
 	Cfg.PostgresUrl = "postgres://postgres:postgres@localhost:5432/userService?sslmode=disable"
 	Cfg.MongoURL = "mongodb://mongo:mongo@localhost:27017"
 	Cfg.JwtKey = "874967EC3EA3490F8F2EF6478B72A756"

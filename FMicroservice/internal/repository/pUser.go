@@ -36,8 +36,9 @@ func (r *PUser) GetUserByLogin(ctx context.Context, login string) (*model.User, 
 	return &user, nil
 }
 func (r *PUser) UpdateUser(ctx context.Context, login string, user *model.User) error {
-	_, err := r.Pool.Exec(ctx, "update users set email=$1, name=$2, age=$3, updated=$4 where login=$5 and deleted=false",
-		user.Email, user.Name, user.Age, user.Updated, login)
+	var id int
+	err := r.Pool.QueryRow(ctx, "update users set email=$1, name=$2, age=$3, updated=$4 where login=$5 and deleted=false returning id",
+		user.Email, user.Name, user.Age, user.Updated, login).Scan(&id)
 	if err != nil {
 		return fmt.Errorf("PUser - UpdateUser - Exec: %w", err)
 	}
@@ -46,8 +47,9 @@ func (r *PUser) UpdateUser(ctx context.Context, login string, user *model.User) 
 }
 
 func (r *PUser) RefreshUser(ctx context.Context, login, token string) error {
-	_, err := r.Pool.Exec(ctx, "update users set token=$1, updated=$2 where login=$3 and deleted=false",
-		token, time.Now(), login)
+	var id int
+	err := r.Pool.QueryRow(ctx, "update users set token=$1, updated=$2 where login=$3 and deleted=false returning id",
+		token, time.Now(), login).Scan(&id)
 	if err != nil {
 		return fmt.Errorf("PUser - RefreshUser - Exec: %w", err)
 	}
@@ -56,8 +58,9 @@ func (r *PUser) RefreshUser(ctx context.Context, login, token string) error {
 }
 
 func (r *PUser) DeleteUser(ctx context.Context, login string) error {
-	_, err := r.Pool.Exec(ctx, "update users set deleted=true, updated=$1 where name=$2 and deleted==false",
-		time.Now(), login)
+	var id int
+	err := r.Pool.QueryRow(ctx, "update users set deleted=true, updated=$1 where login=$2 and deleted=false returning id",
+		time.Now(), login).Scan(&id)
 	if err != nil {
 		return fmt.Errorf("PUser - DeleteUser - Exec: %w", err)
 	}

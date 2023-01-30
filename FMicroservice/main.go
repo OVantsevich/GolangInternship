@@ -13,11 +13,14 @@ import (
 	echojwt "github.com/labstack/echo-jwt/v4"
 	"github.com/labstack/echo/v4"
 	"github.com/sirupsen/logrus"
+	echoSwagger "github.com/swaggo/echo-swagger"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"io"
 	"net/http"
 	"os"
+
+	_ "github.com/OVantsevich/GolangInternship/FMicroservice/docs"
 )
 
 type CustomValidator struct {
@@ -66,6 +69,25 @@ func upload(c echo.Context) error {
 	return c.HTML(http.StatusOK, fmt.Sprintf("<p>File %s uploaded successfully with fields name=%s and email=%s.</p>", file.Filename, name, email))
 }
 
+// @title Swagger Example API
+// @version 1.0
+// @description This is a sample server Petstore server.
+// @termsOfService http://swagger.io/terms/
+
+// @contact.name API Support
+// @contact.url http://www.swagger.io/support
+// @contact.email support@swagger.io
+
+// @license.name Apache 2.0
+// @license.url http://www.apache.org/licenses/LICENSE-2.0.html
+
+// @host localhost:12345
+// @BasePath /
+
+// @securityDefinitions.apikey Bearer
+// @in header
+// @name Authorization
+// @description Type "Bearer" followed by a space and JWT token.
 func main() {
 	e := echo.New()
 
@@ -76,7 +98,7 @@ func main() {
 
 	e.Use(echojwt.WithConfig(echojwt.Config{
 		Skipper: func(c echo.Context) bool {
-			if c.Path() == "/login" || c.Path() == "/signup" {
+			if c.Path() == "/login" || c.Path() == "/signup" || c.Path() == "/swagger/*" {
 				return true
 			}
 			return false
@@ -102,10 +124,12 @@ func main() {
 	e.Validator = &CustomValidator{validator: validator.New()}
 
 	e.POST("/signup", userHandler.Signup)
-	e.GET("/login", userHandler.Login)
-	e.PUT("/User", userHandler.Update)
-	e.DELETE("/User", userHandler.Delete)
+	e.POST("/login", userHandler.Login)
+	e.PUT("/update", userHandler.Update)
+	e.DELETE("/delete", userHandler.Delete)
 	e.GET("/refresh", userHandler.Refresh)
+
+	e.GET("/swagger/*", echoSwagger.WrapHandler)
 
 	e.GET("/", func(c echo.Context) error {
 		return c.File("index.html")

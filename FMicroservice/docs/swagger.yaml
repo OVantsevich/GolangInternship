@@ -1,0 +1,225 @@
+basePath: /
+definitions:
+  handler.SignupResponse:
+    properties:
+      access:
+        example: eyJhbGciOiJIUzI1NiIsInR5cC6IkpXVCJ9.eyJsb2dpbiI6InRc3QxIiwiZXhwIjoxNjc1MDgwNjE3fQ.OIt5MGzpbo1vZT5aNRvPwZCpU_tx-lisT2W2eyh78
+        type: string
+      age:
+        maximum: 100
+        minimum: 0
+        type: integer
+      created:
+        example: "2021-05-25T00:53:16.535668Z"
+        format: date-time
+        type: string
+      deleted:
+        example: false
+        type: boolean
+      email:
+        format: email
+        type: string
+      id:
+        type: string
+      login:
+        maxLength: 20
+        minLength: 5
+        type: string
+      name:
+        maxLength: 25
+        minLength: 2
+        type: string
+      password:
+        type: string
+      refresh:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJsb2dpiI6InRlc3QxIiwiZXhwIjoxNjc1MTE1NzE3fQ.UJ0HF6D4Hb7cLdDfQxg3Byzvb8hWEXwK2RaNWDH54
+        type: string
+      token:
+        type: string
+      updated:
+        example: "2021-05-25T00:53:16.535668Z"
+        format: date-time
+        type: string
+    required:
+    - age
+    - email
+    - login
+    - name
+    - password
+    type: object
+  handler.TokenResponse:
+    properties:
+      access:
+        example: eyJhbGciOiJIUzI1NiIsInR5cC6IkpXVCJ9.eyJsb2dpbiI6InRc3QxIiwiZXhwIjoxNjc1MDgwNjE3fQ.OIt5MGzpbo1vZT5aNRvPwZCpU_tx-lisT2W2eyh78
+        type: string
+      refresh:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJsb2dpiI6InRlc3QxIiwiZXhwIjoxNjc1MTE1NzE3fQ.UJ0HF6D4Hb7cLdDfQxg3Byzvb8hWEXwK2RaNWDH54
+        type: string
+    type: object
+  model.User:
+    properties:
+      age:
+        maximum: 100
+        minimum: 0
+        type: integer
+      created:
+        example: "2021-05-25T00:53:16.535668Z"
+        format: date-time
+        type: string
+      deleted:
+        example: false
+        type: boolean
+      email:
+        format: email
+        type: string
+      id:
+        type: string
+      login:
+        maxLength: 20
+        minLength: 5
+        type: string
+      name:
+        maxLength: 25
+        minLength: 2
+        type: string
+      password:
+        type: string
+      token:
+        type: string
+      updated:
+        example: "2021-05-25T00:53:16.535668Z"
+        format: date-time
+        type: string
+    required:
+    - age
+    - email
+    - login
+    - name
+    - password
+    type: object
+host: localhost:12345
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: This is a sample server Petstore server.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Swagger Example API
+  version: "1.0"
+paths:
+  /delete:
+    delete:
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: login
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+      security:
+      - Bearer: []
+      summary: Delete user
+      tags:
+      - users
+  /login:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: login and password
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.User'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handler.TokenResponse'
+        "500":
+          description: Internal Server Error
+      summary: Login user
+      tags:
+      - users
+  /refresh:
+    get:
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handler.TokenResponse'
+        "500":
+          description: Internal Server Error
+      security:
+      - Bearer: []
+      summary: Refresh accessToken and refreshToken
+      tags:
+      - users
+  /signup:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: New user object
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.User'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handler.SignupResponse'
+        "400":
+          description: Bad Request
+        "500":
+          description: Internal Server Error
+      summary: Add new user
+      tags:
+      - users
+  /update:
+    put:
+      parameters:
+      - description: New data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.User'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: login
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+        "500":
+          description: Internal Server Error
+      security:
+      - Bearer: []
+      summary: Update info about user
+      tags:
+      - users
+securityDefinitions:
+  Bearer:
+    description: Type "Bearer" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

@@ -5,7 +5,7 @@ import (
 	"github.com/OVantsevich/GolangInternship/FMicroservice/internal/model"
 	"github.com/OVantsevich/GolangInternship/FMicroservice/internal/service"
 	"github.com/golang-jwt/jwt/v4"
-	"github.com/labstack/echo/v4"
+	echo "github.com/labstack/echo/v4"
 	"github.com/sirupsen/logrus"
 	"net/http"
 )
@@ -15,8 +15,8 @@ type User struct {
 }
 
 type TokenResponse struct {
-	AccessToken  string `json:"access"`
-	RefreshToken string `json:"refresh"`
+	AccessToken  string `json:"access" example:"eyJhbGciOiJIUzI1NiIsInR5cC6IkpXVCJ9.eyJsb2dpbiI6InRc3QxIiwiZXhwIjoxNjc1MDgwNjE3fQ.OIt5MGzpbo1vZT5aNRvPwZCpU_tx-lisT2W2eyh78"`
+	RefreshToken string `json:"refresh" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJsb2dpiI6InRlc3QxIiwiZXhwIjoxNjc1MTE1NzE3fQ.UJ0HF6D4Hb7cLdDfQxg3Byzvb8hWEXwK2RaNWDH54"`
 }
 
 type SignupResponse struct {
@@ -28,6 +28,17 @@ func NewUserHandler(s *service.User) *User {
 	return &User{s: s}
 }
 
+// Signup godoc
+//
+// @Summary      Add new user
+// @Tags         users
+// @Accept       json
+// @Produce      json
+// @Param        body	body     model.User  true  "New user object"
+// @Success      201	{object}	SignupResponse
+// @Failure      400
+// @Failure      500
+// @Router       /signup [post]
 func (h *User) Signup(c echo.Context) (err error) {
 	user := &model.User{}
 	if err = c.Bind(user); err != nil {
@@ -62,8 +73,19 @@ func (h *User) Signup(c echo.Context) (err error) {
 			}})
 }
 
+// Login godoc
+//
+// @Summary      Login user
+// @Tags         users
+// @Accept       json
+// @Produce      json
+// @Param        body		body    model.User	true  "login and password"
+// @Success      201	{object}	TokenResponse
+// @Failure      500
+// @Router       /login [post]
 func (h *User) Login(c echo.Context) (err error) {
 	user := &model.User{}
+
 	if err = c.Bind(user); err != nil {
 		logrus.Error(fmt.Errorf("userHandler - Login - Bind: %w", err))
 		return
@@ -84,6 +106,15 @@ func (h *User) Login(c echo.Context) (err error) {
 	})
 }
 
+// Refresh godoc
+//
+// @Summary      Refresh accessToken and refreshToken
+// @Tags         users
+// @Produce      json
+// @Success      201	{object}	TokenResponse
+// @Failure      500
+// @Router       /refresh [get]
+// @Security Bearer
 func (h *User) Refresh(c echo.Context) (err error) {
 	token, login := tokenFromContext(c)
 
@@ -102,6 +133,17 @@ func (h *User) Refresh(c echo.Context) (err error) {
 	})
 }
 
+// Update godoc
+//
+// @Summary      Update info about user
+// @Tags         users
+// @Produce      json
+// @Param		 body	body	model.User	 true	"New data"
+// @Success      201	{string} string "login"
+// @Failure      400
+// @Failure      500
+// @Router       /update [put]
+// @Security Bearer
 func (h *User) Update(c echo.Context) (err error) {
 	user := &model.User{}
 	if err = c.Bind(user); err != nil {
@@ -129,6 +171,15 @@ func (h *User) Update(c echo.Context) (err error) {
 	return c.JSON(http.StatusOK, login)
 }
 
+// Delete godoc
+//
+// @Summary      Delete user
+// @Tags         users
+// @Produce      json
+// @Success      201	{string} string "login"
+// @Failure      500
+// @Router       /delete [delete]
+// @Security Bearer
 func (h *User) Delete(c echo.Context) (err error) {
 	_, login := tokenFromContext(c)
 

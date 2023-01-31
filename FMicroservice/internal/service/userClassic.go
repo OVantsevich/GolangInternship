@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-type User struct {
+type UserClassic struct {
 	rps    repository.User
 	jwtKey []byte
 }
@@ -20,11 +20,11 @@ type CustomClaims struct {
 	jwt.RegisteredClaims
 }
 
-func NewUserService(rps repository.User, key string) *User {
-	return &User{rps: rps, jwtKey: []byte(key)}
+func NewUserServiceClassic(rps repository.User, key string) *UserClassic {
+	return &UserClassic{rps: rps, jwtKey: []byte(key)}
 }
 
-func (u *User) Signup(ctx context.Context, user *model.User) (accessToken, refreshToken string, user2 *model.User, err error) {
+func (u *UserClassic) Signup(ctx context.Context, user *model.User) (accessToken, refreshToken string, user2 *model.User, err error) {
 
 	if err = passwordvalidator.Validate(user.Password, 50); err != nil {
 		return "", "", nil, fmt.Errorf("userService - Signup - Validate: %w", err)
@@ -42,7 +42,7 @@ func (u *User) Signup(ctx context.Context, user *model.User) (accessToken, refre
 	return
 }
 
-func (u *User) Login(ctx context.Context, login, password string) (accessToken, refreshToken string, err error) {
+func (u *UserClassic) Login(ctx context.Context, login, password string) (accessToken, refreshToken string, err error) {
 	var user *model.User
 	if user, err = u.rps.GetUserByLogin(ctx, login); err != nil {
 		return "", "", fmt.Errorf("userService - Login - GetUserByLogin: %w", err)
@@ -60,7 +60,7 @@ func (u *User) Login(ctx context.Context, login, password string) (accessToken, 
 	return
 }
 
-func (u *User) Refresh(ctx context.Context, login, userRefreshToken string) (accessToken, refreshToken string, err error) {
+func (u *UserClassic) Refresh(ctx context.Context, login, userRefreshToken string) (accessToken, refreshToken string, err error) {
 	var user *model.User
 
 	if user, err = u.rps.GetUserByLogin(ctx, login); err != nil {
@@ -79,7 +79,7 @@ func (u *User) Refresh(ctx context.Context, login, userRefreshToken string) (acc
 	return
 }
 
-func (u *User) Update(ctx context.Context, login string, user *model.User) (err error) {
+func (u *UserClassic) Update(ctx context.Context, login string, user *model.User) (err error) {
 	if err = u.rps.UpdateUser(ctx, login, user); err != nil {
 		return fmt.Errorf("userService - Update - UpdateUser: %w", err)
 	}
@@ -87,7 +87,7 @@ func (u *User) Update(ctx context.Context, login string, user *model.User) (err 
 	return
 }
 
-func (u *User) Delete(ctx context.Context, login string) (err error) {
+func (u *UserClassic) Delete(ctx context.Context, login string) (err error) {
 	if err = u.rps.DeleteUser(ctx, login); err != nil {
 		return fmt.Errorf("userService - Delete - DeleteUser: %w", err)
 	}
@@ -95,7 +95,7 @@ func (u *User) Delete(ctx context.Context, login string) (err error) {
 	return
 }
 
-func (u *User) CreateJWT(ctx context.Context, user *model.User) (accessTokenStr, refreshTokenStr string, err error) {
+func (u *UserClassic) CreateJWT(ctx context.Context, user *model.User) (accessTokenStr, refreshTokenStr string, err error) {
 	accessClaims := &CustomClaims{
 		user.Login,
 		jwt.RegisteredClaims{

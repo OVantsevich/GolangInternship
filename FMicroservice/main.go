@@ -118,8 +118,8 @@ func main() {
 	}
 	defer ClosePool(cfg, repos)
 
-	userService := service.NewUserService(repos, cfg.JwtKey)
-	userHandler := handler.NewUserHandler(userService)
+	userService := service.NewUserServiceClassic(repos, cfg.JwtKey)
+	userHandler := handler.NewUserHandlerClassic(userService)
 
 	e.Validator = &CustomValidator{validator: validator.New()}
 

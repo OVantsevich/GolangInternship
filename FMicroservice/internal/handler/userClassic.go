@@ -10,8 +10,8 @@ import (
 	"net/http"
 )
 
-type User struct {
-	s *service.User
+type UserClassic struct {
+	s service.User
 }
 
 type TokenResponse struct {
@@ -24,8 +24,8 @@ type SignupResponse struct {
 	*TokenResponse
 }
 
-func NewUserHandler(s *service.User) *User {
-	return &User{s: s}
+func NewUserHandlerClassic(s service.User) *UserClassic {
+	return &UserClassic{s: s}
 }
 
 // Signup godoc
@@ -39,7 +39,7 @@ func NewUserHandler(s *service.User) *User {
 // @Failure      400
 // @Failure      500
 // @Router       /signup [post]
-func (h *User) Signup(c echo.Context) (err error) {
+func (h *UserClassic) Signup(c echo.Context) (err error) {
 	user := &model.User{}
 	if err = c.Bind(user); err != nil {
 		logrus.Error(fmt.Errorf("userHandler - Signup - Bind: %w", err))
@@ -83,7 +83,7 @@ func (h *User) Signup(c echo.Context) (err error) {
 // @Success      201	{object}	TokenResponse
 // @Failure      500
 // @Router       /login [post]
-func (h *User) Login(c echo.Context) (err error) {
+func (h *UserClassic) Login(c echo.Context) (err error) {
 	user := &model.User{}
 
 	if err = c.Bind(user); err != nil {
@@ -115,7 +115,7 @@ func (h *User) Login(c echo.Context) (err error) {
 // @Failure      500
 // @Router       /refresh [get]
 // @Security Bearer
-func (h *User) Refresh(c echo.Context) (err error) {
+func (h *UserClassic) Refresh(c echo.Context) (err error) {
 	token, login := tokenFromContext(c)
 
 	var accessToken, refreshToken string
@@ -144,7 +144,7 @@ func (h *User) Refresh(c echo.Context) (err error) {
 // @Failure      500
 // @Router       /update [put]
 // @Security Bearer
-func (h *User) Update(c echo.Context) (err error) {
+func (h *UserClassic) Update(c echo.Context) (err error) {
 	user := &model.User{}
 	if err = c.Bind(user); err != nil {
 		logrus.Error(fmt.Errorf("userHandler - Update - Bind: %w", err))
@@ -180,7 +180,7 @@ func (h *User) Update(c echo.Context) (err error) {
 // @Failure      500
 // @Router       /delete [delete]
 // @Security Bearer
-func (h *User) Delete(c echo.Context) (err error) {
+func (h *UserClassic) Delete(c echo.Context) (err error) {
 	_, login := tokenFromContext(c)
 
 	if err = h.s.Delete(c.Request().Context(), login); err != nil {

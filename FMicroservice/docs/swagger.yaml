@@ -111,6 +111,31 @@ info:
   title: Swagger Example API
   version: "1.0"
 paths:
+  /admin/LastTen:
+    get:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            items:
+              items:
+                $ref: '#/definitions/model.User'
+              type: array
+            type: array
+        "403":
+          description: Forbidden
+        "500":
+          description: Internal Server Error
+      security:
+      - Bearer: []
+      summary: last ten users
+      tags:
+      - users
+      - admin
   /delete:
     delete:
       produces:

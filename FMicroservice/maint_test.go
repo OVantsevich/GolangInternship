@@ -23,54 +23,6 @@ var (
 	}
 )
 
-func RunTestEcho() {
-	go main()
-	//e := echo.New()
-	//
-	//e.Use(echojwt.WithConfig(echojwt.Config{
-	//	Skipper: func(c echo.Context) bool {
-	//		if c.Path() == "/login" || c.Path() == "/signup" {
-	//			return true
-	//		}
-	//		return false
-	//	},
-	//	KeyFunc: func(token *jwt.Token) (interface{}, error) {
-	//		return []byte(cfg.JwtKey), nil
-	//	},
-	//	NewClaimsFunc: func(c echo.Context) jwt.Claims {
-	//		return new(service.CustomClaims)
-	//	},
-	//}))
-	//
-	//var repos repository.User
-	//repos, err := DBConnectionTest()
-	//if err != nil {
-	//	logrus.Fatal(err)
-	//}
-	//defer ClosePoolTest(repos)
-	//
-	//userService := service.NewUserService(repos, cfg.JwtKey)
-	//userHandler := handler.NewUserHandler(userService)
-	//
-	//e.Validator = &CustomValidator{validator: validator.New()}
-	//
-	//e.POST("/signup", userHandler.Signup)
-	//e.GET("/login", userHandler.Login)
-	//e.PUT("/User", userHandler.Update)
-	//e.DELETE("/User", userHandler.Delete)
-	//e.GET("/refresh", userHandler.Refresh)
-	//
-	//e.GET("/", func(c echo.Context) error {
-	//	return c.File("index.html")
-	//})
-	//e.GET("/file", func(c echo.Context) error {
-	//	return c.File("file.svg")
-	//})
-	//e.POST("/upload", upload)
-	//
-	//logrus.Fatal(e.Start(":8080"))
-}
-
 func DBConnectionTest() (repository.User, error) {
 	switch cfg.CurrentDB {
 	case "postgres":

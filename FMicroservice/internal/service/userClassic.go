@@ -17,6 +17,7 @@ type UserClassic struct {
 
 type CustomClaims struct {
 	Login string `json:"login"`
+	Role  string `json:"role"`
 	jwt.RegisteredClaims
 }
 
@@ -34,7 +35,7 @@ func (u *UserClassic) Signup(ctx context.Context, user *model.User) (accessToken
 		return "", "", nil, fmt.Errorf("userService - Signup - CreateUser: %w", err)
 	}
 
-	accessToken, refreshToken, err = u.CreateJWT(ctx, user)
+	accessToken, refreshToken, err = u.CreateJWT(ctx, user, "user")
 	if err != nil {
 		return "", "", nil, fmt.Errorf("userService - Signup - CreateJWT: %w", err)
 	}
@@ -44,7 +45,9 @@ func (u *UserClassic) Signup(ctx context.Context, user *model.User) (accessToken
 
 func (u *UserClassic) Login(ctx context.Context, login, password string) (accessToken, refreshToken string, err error) {
 	var user *model.User
-	if user, err = u.rps.GetUserByLogin(ctx, login); err != nil {
+	var role string
+
+	if user, role, err = u.rps.GetUserByLogin(ctx, login); err != nil {
 		return "", "", fmt.Errorf("userService - Login - GetUserByLogin: %w", err)
 	}
 
@@ -52,7 +55,7 @@ func (u *UserClassic) Login(ctx context.Context, login, password string) (access
 		return "", "", fmt.Errorf("userService - Login - Password invalid: %w", err)
 	}
 
-	accessToken, refreshToken, err = u.CreateJWT(ctx, user)
+	accessToken, refreshToken, err = u.CreateJWT(ctx, user, role)
 	if err != nil {
 		return "", "", fmt.Errorf("userService - Login - CreateJWT: %w", err)
 	}
@@ -62,8 +65,9 @@ func (u *UserClassic) Login(ctx context.Context, login, password string) (access
 
 func (u *UserClassic) Refresh(ctx context.Context, login, userRefreshToken string) (accessToken, refreshToken string, err error) {
 	var user *model.User
+	var role string
 
-	if user, err = u.rps.GetUserByLogin(ctx, login); err != nil {
+	if user, role, err = u.rps.GetUserByLogin(ctx, login); err != nil {
 		return "", "", fmt.Errorf("userService - Refresh - GetUserByLogin: %w", err)
 	}
 
@@ -71,7 +75,7 @@ func (u *UserClassic) Refresh(ctx context.Context, login, userRefreshToken strin
 		return "", "", fmt.Errorf("userService - Refresh - Token invalid: %w", err)
 	}
 
-	accessToken, refreshToken, err = u.CreateJWT(ctx, user)
+	accessToken, refreshToken, err = u.CreateJWT(ctx, user, role)
 	if err != nil {
 		return "", "", fmt.Errorf("userService - Refresh - CreateJWT: %w", err)
 	}
@@ -95,9 +99,10 @@ func (u *UserClassic) Delete(ctx context.Context, login string) (err error) {
 	return
 }
 
-func (u *UserClassic) CreateJWT(ctx context.Context, user *model.User) (accessTokenStr, refreshTokenStr string, err error) {
+func (u *UserClassic) CreateJWT(ctx context.Context, user *model.User, role string) (accessTokenStr, refreshTokenStr string, err error) {
 	accessClaims := &CustomClaims{
 		user.Login,
+		role,
 		jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 15)),
 		},
@@ -110,6 +115,7 @@ func (u *UserClassic) CreateJWT(ctx context.Context, user *model.User) (accessTo
 
 	refreshClaims := &CustomClaims{
 		user.Login,
+		role,
 		jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 10)),
 		},

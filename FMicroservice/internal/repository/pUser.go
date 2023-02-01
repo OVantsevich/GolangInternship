@@ -25,15 +25,20 @@ func (r *PUser) CreateUser(ctx context.Context, user *model.User) (*model.User, 
 	return user, nil
 }
 
-func (r *PUser) GetUserByLogin(ctx context.Context, login string) (*model.User, error) {
+func (r *PUser) GetUserByLogin(ctx context.Context, login string) (*model.User, string, error) {
 	user := model.User{}
-	err := r.Pool.QueryRow(ctx, "select * from users where login=$1 and deleted=false", login).Scan(
-		&user.ID, &user.Login, &user.Email, &user.Password, &user.Name, &user.Age, &user.Token, &user.Deleted, &user.Created, &user.Updated)
+	var role string
+	err := r.Pool.QueryRow(ctx, "select (select name from roles where id = (select role_id from l_role_user where user_id = u.id)) role_name, "+
+		"* "+
+		"	from users u "+
+		"where login=$1 "+
+		"and deleted=false", login).Scan(
+		&role, &user.ID, &user.Login, &user.Email, &user.Password, &user.Name, &user.Age, &user.Token, &user.Deleted, &user.Created, &user.Updated)
 	if err != nil {
-		return nil, fmt.Errorf("PUser - GetUserByName - QueryRow: %w", err)
+		return nil, "", fmt.Errorf("PUser - GetUserByName - QueryRow: %w", err)
 	}
 
-	return &user, nil
+	return &user, role, nil
 }
 func (r *PUser) UpdateUser(ctx context.Context, login string, user *model.User) error {
 	var id int

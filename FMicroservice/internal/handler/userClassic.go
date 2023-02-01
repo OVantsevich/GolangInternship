@@ -194,6 +194,31 @@ func (h *UserClassic) Delete(c echo.Context) (err error) {
 	return c.JSON(http.StatusOK, login)
 }
 
+// LastTen godoc
+//
+// @Summary      last ten users
+// @Tags         users,admin
+// @Accept       json
+// @Produce      json
+// @Success      201	{array}	[]model.User
+// @Failure      403
+// @Failure      500
+// @Router       /admin/LastTen [get]
+// @Security Bearer
+func (h *UserClassic) LastTen(c echo.Context) (err error) {
+	_, login := tokenFromContext(c)
+
+	if err = h.s.Delete(c.Request().Context(), login); err != nil {
+		logrus.Error(fmt.Errorf("userHandler - Delete - Delete: %w", err))
+		return &echo.HTTPError{
+			Code:    http.StatusInternalServerError,
+			Message: err.Error(),
+		}
+	}
+
+	return c.JSON(http.StatusOK, login)
+}
+
 func tokenFromContext(c echo.Context) (tokenRaw string, login string) {
 	user := c.Get("user").(*jwt.Token)
 	claims := user.Claims

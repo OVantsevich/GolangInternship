@@ -10,4 +10,6 @@ type User interface {
 	Refresh(c echo.Context) (err error)
 	Update(c echo.Context) (err error)
 	Delete(c echo.Context) (err error)
+
+	UserList(c echo.Context) (err error)
 }

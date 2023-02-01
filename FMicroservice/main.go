@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	_ "github.com/OVantsevich/GolangInternship/FMicroservice/docs"
 	"github.com/OVantsevich/GolangInternship/FMicroservice/internal/config"
 	"github.com/OVantsevich/GolangInternship/FMicroservice/internal/handler"
 	"github.com/OVantsevich/GolangInternship/FMicroservice/internal/repository"
@@ -19,8 +20,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-
-	_ "github.com/OVantsevich/GolangInternship/FMicroservice/docs"
 )
 
 type CustomValidator struct {
@@ -128,6 +127,19 @@ func main() {
 	e.PUT("/update", userHandler.Update)
 	e.DELETE("/delete", userHandler.Delete)
 	e.GET("/refresh", userHandler.Refresh)
+
+	admin := e.Group("/admin")
+	admin.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			user := c.Get("user").(*jwt.Token)
+			claims := user.Claims
+			if claims.(*service.CustomClaims).Role == "admin" {
+				return next(c)
+			}
+			return echo.NewHTTPError(http.StatusForbidden, "access denied")
+		}
+	})
+	admin.GET("/lastTen", userHandler.LastTen)
 
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
 

@@ -2,9 +2,13 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"github.com/OVantsevich/GolangInternship/FMicroservice/internal/model"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/ory/dockertest/v3"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
+	"os"
 	"testing"
 )
 
@@ -43,16 +47,64 @@ var testNoValidData = []model.User{
 	},
 }
 
+var db *pgxpool.Pool
+
+func TestMain(m *testing.M) {
+	pool, err := dockertest.NewPool("")
+	if err != nil {
+		logrus.Fatalf("Could not construct pool: %s", err)
+	}
+
+	err = pool.Client.Ping()
+	if err != nil {
+		logrus.Fatalf("Could not connect to Docker: %s", err)
+	}
+
+	resource, err := pool.RunWithOptions(&dockertest.RunOptions{
+		Repository: "postgres",
+		Tag:        "latest",
+		Env: []string{
+			"POSTGRES_USER=postgres",
+			"POSTGRES_PASSWORD=postgres",
+			"POSTGRES_DB=userService",
+			"listen_addresses = '*'",
+		},
+		Mounts: []string{"/home/olegvantsevich/GolandProjects/GolangInternship/FMicroservice/migrations:/docker-entrypoint-initdb.d"},
+	})
+	if err != nil {
+		logrus.Fatalf("Could not start resource: %s", err)
+	}
+
+	ctx := context.Background()
+	if err := pool.Retry(func() error {
+		var err error
+		db, err = pgxpool.New(ctx, fmt.Sprintf("postgres://postgres:postgres@localhost:%s/userService?sslmode=disable", resource.GetPort("5432/tcp")))
+		if err != nil {
+			return err
+		}
+		return db.Ping(ctx)
+	}); err != nil {
+		logrus.Fatalf("Could not connect to database: %s", err)
+	}
+	db.Exec(ctx, "insert into roles (name) values ('admin')")
+	db.Exec(ctx, "insert into roles (name) values ('user')")
+	code := m.Run()
+
+	if err := pool.Purge(resource); err != nil {
+		logrus.Fatalf("Could not purge resource: %s", err)
+	}
+
+	os.Exit(code)
+}
+
 func NewPRepository(pool *pgxpool.Pool) *PUser {
 	return &PUser{Pool: pool}
 }
 
 func TestPUser_CreateUser(t *testing.T) {
 	ctx := context.Background()
-	pool, err := pgxpool.New(ctx, "postgres://postgres:postgres@localhost:5432/userService?sslmode=disable")
-	require.NoError(t, err, "new pool error")
-	prps = NewPRepository(pool)
-
+	prps = NewPRepository(db)
+	var err error
 	for _, u := range testValidData {
 		_, err = prps.CreateUser(ctx, &u)
 		require.NoError(t, err, "create error")
@@ -79,11 +131,10 @@ func TestPUser_CreateUser(t *testing.T) {
 
 func TestPUser_GetUserByLogin(t *testing.T) {
 	ctx := context.Background()
-	pool, err := pgxpool.New(ctx, "postgres://postgres:postgres@localhost:5432/userService?sslmode=disable")
-	require.NoError(t, err, "new pool error")
-	prps := NewPRepository(pool)
+	prps := NewPRepository(db)
 
 	var user *model.User
+	var err error
 	for _, u := range testValidData {
 		_, err = prps.Pool.Exec(ctx, "delete from users where login=$1 ", u.Login)
 		_, err = prps.CreateUser(ctx, &u)
@@ -108,11 +159,10 @@ func TestPUser_GetUserByLogin(t *testing.T) {
 
 func TestPUser_UpdateUser(t *testing.T) {
 	ctx := context.Background()
-	pool, err := pgxpool.New(ctx, "postgres://postgres:postgres@localhost:5432/userService?sslmode=disable")
-	require.NoError(t, err, "new pool error")
-	prps := NewPRepository(pool)
+	prps := NewPRepository(db)
 
 	var user *model.User
+	var err error
 	for _, u := range testValidData {
 		_, err = prps.Pool.Exec(ctx, "delete from users where login=$1 ", u.Login)
 		_, err = prps.CreateUser(ctx, &u)
@@ -148,11 +198,10 @@ func TestPUser_UpdateUser(t *testing.T) {
 
 func TestPUser_RefreshUser(t *testing.T) {
 	ctx := context.Background()
-	pool, err := pgxpool.New(ctx, "postgres://postgres:postgres@localhost:5432/userService?sslmode=disable")
-	require.NoError(t, err, "new pool error")
-	prps := NewPRepository(pool)
+	prps := NewPRepository(db)
 
 	var user *model.User
+	var err error
 	for _, u := range testValidData {
 		_, err = prps.Pool.Exec(ctx, "delete from users where login=$1 ", u.Login)
 		_, err = prps.CreateUser(ctx, &u)
@@ -181,10 +230,9 @@ func TestPUser_RefreshUser(t *testing.T) {
 
 func TestPUser_DeleteUser(t *testing.T) {
 	ctx := context.Background()
-	pool, err := pgxpool.New(ctx, "postgres://postgres:postgres@localhost:5432/userService?sslmode=disable")
-	require.NoError(t, err, "new pool error")
-	prps := NewPRepository(pool)
+	prps := NewPRepository(db)
 
+	var err error
 	for _, u := range testValidData {
 		_, err = prps.Pool.Exec(ctx, "delete from users where login=$1 ", u.Login)
 		_, err = prps.CreateUser(ctx, &u)

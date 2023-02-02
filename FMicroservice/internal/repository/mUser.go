@@ -43,17 +43,17 @@ func (r *MUser) CreateUser(ctx context.Context, user *model.User) (*model.User, 
 	return user, nil
 }
 
-func (r *MUser) GetUserByLogin(ctx context.Context, login string) (*model.User, string, error) {
+func (r *MUser) GetUserByLogin(ctx context.Context, login string) (*model.User, error) {
 	user := MongoUser{}
 
 	collection := r.Client.Database("userService").Collection("users")
 	result := collection.FindOne(ctx, bson.D{{"user.login", login}, {"user.deleted", false}})
 	err := result.Decode(&user)
 	if err != nil {
-		return nil, "", fmt.Errorf("MUser - GetUserByName - Decode: %w", err)
+		return nil, fmt.Errorf("MUser - GetUserByName - Decode: %w", err)
 	}
 
-	return user.User, user.role, nil
+	return user.User, nil
 }
 func (r *MUser) UpdateUser(ctx context.Context, login string, user *model.User) error {
 	collection := r.Client.Database("userService").Collection("users")

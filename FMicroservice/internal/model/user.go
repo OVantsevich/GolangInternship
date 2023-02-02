@@ -11,6 +11,7 @@ type User struct {
 	Name     string    `json,bson:"name" validate:"required,alpha,gte=2,lte=25"`
 	Age      int       `json,bson:"age" validate:"required,gte=0,lte=100"`
 	Token    string    `json,bson:"token"`
+	Role     string    `json,bson:"role"`
 	Deleted  bool      `json,bson:"deleted" example:"false"`
 	Created  time.Time `json,bson:"created" example:"2021-05-25T00:53:16.535668Z" format:"date-time"`
 	Updated  time.Time `json,bson:"updated" example:"2021-05-25T00:53:16.535668Z" format:"date-time"`

@@ -194,29 +194,31 @@ func (h *UserClassic) Delete(c echo.Context) (err error) {
 	return c.JSON(http.StatusOK, login)
 }
 
-// LastTen godoc
+// UserByLogin godoc
 //
-// @Summary      last ten users
-// @Tags         users,admin
+// @Summary		 getting user by login
+// @Tags         admin
 // @Accept       json
 // @Produce      json
-// @Success      201	{array}	[]model.User
+// @Param        login	 header   string	true  "login"
+// @Success      201	object	GetByLogin
 // @Failure      403
 // @Failure      500
-// @Router       /admin/LastTen [get]
+// @Router       /admin/userByLogin [get]
 // @Security Bearer
-func (h *UserClassic) LastTen(c echo.Context) (err error) {
-	_, login := tokenFromContext(c)
+func (h *UserClassic) UserByLogin(c echo.Context) (err error) {
+	login := c.Request().Header.Get("login")
 
-	if err = h.s.Delete(c.Request().Context(), login); err != nil {
-		logrus.Error(fmt.Errorf("userHandler - Delete - Delete: %w", err))
+	var user *model.User
+	if user, err = h.s.GetByLogin(c.Request().Context(), login); err != nil {
+		logrus.Error(fmt.Errorf("userHandler - UserByLogin - GetLastN: %w", err))
 		return &echo.HTTPError{
 			Code:    http.StatusInternalServerError,
 			Message: err.Error(),
 		}
 	}
 
-	return c.JSON(http.StatusOK, login)
+	return c.JSON(http.StatusOK, user)
 }
 
 func tokenFromContext(c echo.Context) (tokenRaw string, login string) {

@@ -12,6 +12,7 @@ import (
 
 type UserClassic struct {
 	rps    repository.User
+	cache  repository.Cache
 	jwtKey []byte
 }
 
@@ -21,8 +22,8 @@ type CustomClaims struct {
 	jwt.RegisteredClaims
 }
 
-func NewUserServiceClassic(rps repository.User, key string) *UserClassic {
-	return &UserClassic{rps: rps, jwtKey: []byte(key)}
+func NewUserServiceClassic(rps repository.User, cache repository.Cache, key string) *UserClassic {
+	return &UserClassic{rps: rps, cache: cache, jwtKey: []byte(key)}
 }
 
 func (u *UserClassic) Signup(ctx context.Context, user *model.User) (accessToken, refreshToken string, user2 *model.User, err error) {
@@ -35,7 +36,8 @@ func (u *UserClassic) Signup(ctx context.Context, user *model.User) (accessToken
 		return "", "", nil, fmt.Errorf("userService - Signup - CreateUser: %w", err)
 	}
 
-	accessToken, refreshToken, err = u.CreateJWT(ctx, user, "user")
+	user.Role = "user"
+	accessToken, refreshToken, err = u.CreateJWT(ctx, user)
 	if err != nil {
 		return "", "", nil, fmt.Errorf("userService - Signup - CreateJWT: %w", err)
 	}
@@ -45,9 +47,8 @@ func (u *UserClassic) Signup(ctx context.Context, user *model.User) (accessToken
 
 func (u *UserClassic) Login(ctx context.Context, login, password string) (accessToken, refreshToken string, err error) {
 	var user *model.User
-	var role string
 
-	if user, role, err = u.rps.GetUserByLogin(ctx, login); err != nil {
+	if user, err = u.rps.GetUserByLogin(ctx, login); err != nil {
 		return "", "", fmt.Errorf("userService - Login - GetUserByLogin: %w", err)
 	}
 
@@ -55,7 +56,7 @@ func (u *UserClassic) Login(ctx context.Context, login, password string) (access
 		return "", "", fmt.Errorf("userService - Login - Password invalid: %w", err)
 	}
 
-	accessToken, refreshToken, err = u.CreateJWT(ctx, user, role)
+	accessToken, refreshToken, err = u.CreateJWT(ctx, user)
 	if err != nil {
 		return "", "", fmt.Errorf("userService - Login - CreateJWT: %w", err)
 	}
@@ -65,9 +66,8 @@ func (u *UserClassic) Login(ctx context.Context, login, password string) (access
 
 func (u *UserClassic) Refresh(ctx context.Context, login, userRefreshToken string) (accessToken, refreshToken string, err error) {
 	var user *model.User
-	var role string
 
-	if user, role, err = u.rps.GetUserByLogin(ctx, login); err != nil {
+	if user, err = u.rps.GetUserByLogin(ctx, login); err != nil {
 		return "", "", fmt.Errorf("userService - Refresh - GetUserByLogin: %w", err)
 	}
 
@@ -75,7 +75,7 @@ func (u *UserClassic) Refresh(ctx context.Context, login, userRefreshToken strin
 		return "", "", fmt.Errorf("userService - Refresh - Token invalid: %w", err)
 	}
 
-	accessToken, refreshToken, err = u.CreateJWT(ctx, user, role)
+	accessToken, refreshToken, err = u.CreateJWT(ctx, user)
 	if err != nil {
 		return "", "", fmt.Errorf("userService - Refresh - CreateJWT: %w", err)
 	}
@@ -99,10 +99,30 @@ func (u *UserClassic) Delete(ctx context.Context, login string) (err error) {
 	return
 }
 
-func (u *UserClassic) CreateJWT(ctx context.Context, user *model.User, role string) (accessTokenStr, refreshTokenStr string, err error) {
+func (u *UserClassic) GetByLogin(ctx context.Context, login string) (user *model.User, err error) {
+	user, err = u.cache.GetByLogin(ctx, login)
+	if err != nil {
+		return nil, fmt.Errorf("userService - GetByLogin - cache - GetByLogin: %w", err)
+	}
+
+	if user == nil {
+		if user, err = u.rps.GetUserByLogin(ctx, login); err != nil {
+			return nil, fmt.Errorf("userService - GetByLogin - Repository - GetByLogin: %w", err)
+		}
+		err = u.cache.CreateUser(ctx, user)
+		if err != nil {
+			return nil, fmt.Errorf("userService - GetByLogin - cache - CreateUser: %w", err)
+		}
+		return
+	}
+
+	return
+}
+
+func (u *UserClassic) CreateJWT(ctx context.Context, user *model.User) (accessTokenStr, refreshTokenStr string, err error) {
 	accessClaims := &CustomClaims{
 		user.Login,
-		role,
+		user.Role,
 		jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 15)),
 		},
@@ -115,7 +135,7 @@ func (u *UserClassic) CreateJWT(ctx context.Context, user *model.User, role stri
 
 	refreshClaims := &CustomClaims{
 		user.Login,
-		role,
+		user.Role,
 		jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 10)),
 		},

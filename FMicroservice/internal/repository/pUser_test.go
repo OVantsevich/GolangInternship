@@ -140,7 +140,7 @@ func TestPUser_GetUserByLogin(t *testing.T) {
 		_, err = prps.CreateUser(ctx, &u)
 		require.NoError(t, err, "create error")
 
-		user, _, err = prps.GetUserByLogin(ctx, u.Login)
+		user, err = prps.GetUserByLogin(ctx, u.Login)
 		require.Equal(t, u.Password, user.Password)
 		require.Equal(t, u.Email, user.Email)
 		require.NoError(t, err, "get by login error")
@@ -152,7 +152,7 @@ func TestPUser_GetUserByLogin(t *testing.T) {
 	for _, u := range testValidData {
 		_, err = prps.Pool.Exec(ctx, "delete from users where login=$1 ", u.Login)
 
-		user, _, err = prps.GetUserByLogin(ctx, u.Login)
+		user, err = prps.GetUserByLogin(ctx, u.Login)
 		require.Error(t, err, "get by login error")
 	}
 }
@@ -172,7 +172,7 @@ func TestPUser_UpdateUser(t *testing.T) {
 		err = prps.UpdateUser(ctx, u.Login, &u)
 		require.NoError(t, err, "update error")
 
-		user, _, err = prps.GetUserByLogin(ctx, u.Login)
+		user, err = prps.GetUserByLogin(ctx, u.Login)
 		require.Equal(t, "Update", user.Name)
 		require.NoError(t, err, "get by login error")
 
@@ -211,7 +211,7 @@ func TestPUser_RefreshUser(t *testing.T) {
 		err = prps.RefreshUser(ctx, u.Login, token)
 		require.NoError(t, err, "refresh error")
 
-		user, _, err = prps.GetUserByLogin(ctx, u.Login)
+		user, err = prps.GetUserByLogin(ctx, u.Login)
 		require.Equal(t, token, user.Token)
 		require.NoError(t, err, "get by login error")
 
@@ -241,7 +241,7 @@ func TestPUser_DeleteUser(t *testing.T) {
 		err = prps.DeleteUser(ctx, u.Login)
 		require.NoError(t, err, "delete error")
 
-		_, _, err = prps.GetUserByLogin(ctx, u.Login)
+		_, err = prps.GetUserByLogin(ctx, u.Login)
 		require.Error(t, err, "get by login error")
 
 		_, err = prps.Pool.Exec(ctx, "delete from users where login=$1 ", u.Login)

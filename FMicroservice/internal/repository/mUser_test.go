@@ -101,7 +101,7 @@ func TestMUser_GetUserByLogin(t *testing.T) {
 		_, err = mrps.CreateUser(ctx, u.User)
 		require.NoError(t, err, "create error")
 
-		user, _, err = mrps.GetUserByLogin(ctx, u.Login)
+		user, err = mrps.GetUserByLogin(ctx, u.Login)
 		require.Equal(t, u.Password, user.Password)
 		require.Equal(t, u.Email, user.Email)
 		require.NoError(t, err, "get by login error")
@@ -115,7 +115,7 @@ func TestMUser_GetUserByLogin(t *testing.T) {
 		_, err = mrps.Client.Database("userService").Collection("users").DeleteOne(
 			ctx, bson.D{{"user.login", u.Login}})
 
-		user, _, err = mrps.GetUserByLogin(ctx, u.Login)
+		user, err = mrps.GetUserByLogin(ctx, u.Login)
 		require.Error(t, err, "get by login error")
 	}
 }
@@ -137,7 +137,7 @@ func TestMUser_UpdateUser(t *testing.T) {
 		err = mrps.UpdateUser(ctx, u.Login, u.User)
 		require.NoError(t, err, "update error")
 
-		user, _, err = mrps.GetUserByLogin(ctx, u.Login)
+		user, err = mrps.GetUserByLogin(ctx, u.Login)
 		require.Equal(t, "Update", user.Name)
 		require.NoError(t, err, "get by login error")
 
@@ -172,7 +172,7 @@ func TestMUser_RefreshUser(t *testing.T) {
 		err = mrps.RefreshUser(ctx, u.Login, token)
 		require.NoError(t, err, "refresh error")
 
-		user, _, err = mrps.GetUserByLogin(ctx, u.Login)
+		user, err = mrps.GetUserByLogin(ctx, u.Login)
 		require.Equal(t, token, user.Token)
 		require.NoError(t, err, "get by login error")
 
@@ -206,7 +206,7 @@ func TestMUser_DeleteUser(t *testing.T) {
 		err = mrps.DeleteUser(ctx, u.Login)
 		require.NoError(t, err, "delete error")
 
-		_, _, err = mrps.GetUserByLogin(ctx, u.Login)
+		_, err = mrps.GetUserByLogin(ctx, u.Login)
 		require.Error(t, err, "get by login error")
 
 		_, err = mrps.Client.Database("userService").Collection("users").DeleteOne(

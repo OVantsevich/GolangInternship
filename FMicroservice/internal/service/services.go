@@ -11,4 +11,6 @@ type User interface {
 	Refresh(ctx context.Context, login, userRefreshToken string) (string, string, error)
 	Update(ctx context.Context, login string, user *model.User) error
 	Delete(ctx context.Context, login string) error
+
+	GetByLogin(ctx context.Context, login string) (*model.User, error)
 }

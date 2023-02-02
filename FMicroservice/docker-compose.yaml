@@ -10,9 +10,15 @@ services:
       - MONGO_DB_URL=mongodb://mongo:mongo@localhost:27017
       - JWT_KEY=874967EC3EA3490F8F2EF6478B72A756
       - POSTGRES_DB_URL=postgres://postgres:postgres@localhost:5432/User?sslmode=disable
+      - REDIS_HOST=cache
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=redis
     depends_on:
       postgres:
         condition: service_healthy
+      cache:
+        condition: service_started
+
   postgres:
     image: postgres
     environment:
@@ -60,3 +66,10 @@ services:
       - postgres
     networks:
       - default
+
+  cache:
+    image: redis
+    restart: always
+    ports:
+      - '6379:6379'
+    command: redis-server --save 20 1 --loglevel warning

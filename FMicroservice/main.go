@@ -9,6 +9,7 @@ import (
 	"github.com/OVantsevich/GolangInternship/FMicroservice/internal/repository"
 	"github.com/OVantsevich/GolangInternship/FMicroservice/internal/service"
 	"github.com/go-playground/validator/v10"
+	"github.com/go-redis/redis/v8"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/jackc/pgx/v5/pgxpool"
 	echojwt "github.com/labstack/echo-jwt/v4"
@@ -117,7 +118,12 @@ func main() {
 	}
 	defer ClosePool(cfg, repos)
 
-	userService := service.NewUserServiceClassic(repos, cfg.JwtKey)
+	client := redis.NewClient(&redis.Options{
+		Addr: "localhost:6379",
+	})
+	defer client.Close()
+
+	userService := service.NewUserServiceClassic(repos, &repository.RedisCache{Client: *client}, cfg.JwtKey)
 	userHandler := handler.NewUserHandlerClassic(userService)
 
 	e.Validator = &CustomValidator{validator: validator.New()}
@@ -139,7 +145,7 @@ func main() {
 			return echo.NewHTTPError(http.StatusForbidden, "access denied")
 		}
 	})
-	admin.GET("/lastTen", userHandler.LastTen)
+	admin.GET("/userByLogin", userHandler.UserByLogin)
 
 	e.GET("/swagger/*", echoSwagger.WrapHandler)
 

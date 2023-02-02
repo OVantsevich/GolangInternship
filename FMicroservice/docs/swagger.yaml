@@ -1,5 +1,48 @@
 basePath: /
 definitions:
+  handler.GetByLoginResponse:
+    properties:
+      age:
+        maximum: 100
+        minimum: 0
+        type: integer
+      created:
+        example: "2021-05-25T00:53:16.535668Z"
+        format: date-time
+        type: string
+      deleted:
+        example: false
+        type: boolean
+      email:
+        format: email
+        type: string
+      id:
+        type: string
+      login:
+        maxLength: 20
+        minLength: 5
+        type: string
+      name:
+        maxLength: 25
+        minLength: 2
+        type: string
+      password:
+        type: string
+      role:
+        type: string
+      token:
+        type: string
+      updated:
+        example: "2021-05-25T00:53:16.535668Z"
+        format: date-time
+        type: string
+    required:
+    - age
+    - email
+    - login
+    - name
+    - password
+    type: object
   handler.SignupResponse:
     properties:
       access:
@@ -111,30 +154,31 @@ info:
   title: Swagger Example API
   version: "1.0"
 paths:
-  /admin/LastTen:
+  /admin/userByLogin:
     get:
       consumes:
       - application/json
+      parameters:
+      - description: login
+        in: header
+        name: login
+        required: true
+        type: string
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            items:
-              items:
-                $ref: '#/definitions/model.User'
-              type: array
-            type: array
+            $ref: '#/definitions/handler.GetByLoginResponse'
         "403":
           description: Forbidden
         "500":
           description: Internal Server Error
       security:
       - Bearer: []
-      summary: last ten users
+      summary: getting user by login
       tags:
-      - users
       - admin
   /delete:
     delete:

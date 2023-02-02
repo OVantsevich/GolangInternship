@@ -13,6 +13,7 @@ import (
 type UserClassic struct {
 	rps    repository.User
 	cache  repository.Cache
+	stream repository.Stream
 	jwtKey []byte
 }
 
@@ -22,8 +23,8 @@ type CustomClaims struct {
 	jwt.RegisteredClaims
 }
 
-func NewUserServiceClassic(rps repository.User, cache repository.Cache, key string) *UserClassic {
-	return &UserClassic{rps: rps, cache: cache, jwtKey: []byte(key)}
+func NewUserServiceClassic(rps repository.User, cache repository.Cache, stream repository.Stream, key string) *UserClassic {
+	return &UserClassic{rps: rps, cache: cache, stream: stream, jwtKey: []byte(key)}
 }
 
 func (u *UserClassic) Signup(ctx context.Context, user *model.User) (accessToken, refreshToken string, user2 *model.User, err error) {
@@ -41,6 +42,8 @@ func (u *UserClassic) Signup(ctx context.Context, user *model.User) (accessToken
 	if err != nil {
 		return "", "", nil, fmt.Errorf("userService - Signup - CreateJWT: %w", err)
 	}
+
+	u.stream.CreatingUser(ctx, user)
 
 	return
 }

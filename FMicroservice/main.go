@@ -123,7 +123,12 @@ func main() {
 	})
 	defer client.Close()
 
-	userService := service.NewUserServiceClassic(repos, &repository.RedisCache{Client: *client}, cfg.JwtKey)
+	rds := &repository.Redis{Client: *client}
+
+	rds.RedisStreamInit(context.Background())
+	rds.CreatConsumer()
+
+	userService := service.NewUserServiceClassic(repos, rds, rds, cfg.JwtKey)
 	userHandler := handler.NewUserHandlerClassic(userService)
 
 	e.Validator = &CustomValidator{validator: validator.New()}

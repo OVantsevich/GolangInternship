@@ -24,7 +24,7 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/admin/LastTen": {
+        "/admin/userByLogin": {
             "get": {
                 "security": [
                     {
@@ -38,21 +38,23 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "users",
                     "admin"
                 ],
-                "summary": "last ten users",
+                "summary": "getting user by login",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "login",
+                        "name": "login",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "type": "array",
-                                "items": {
-                                    "$ref": "#/definitions/model.User"
-                                }
-                            }
+                            "$ref": "#/definitions/handler.GetByLoginResponse"
                         }
                     },
                     "403": {
@@ -236,6 +238,63 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "handler.GetByLoginResponse": {
+            "type": "object",
+            "required": [
+                "age",
+                "email",
+                "login",
+                "name",
+                "password"
+            ],
+            "properties": {
+                "age": {
+                    "type": "integer",
+                    "maximum": 100,
+                    "minimum": 0
+                },
+                "created": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2021-05-25T00:53:16.535668Z"
+                },
+                "deleted": {
+                    "type": "boolean",
+                    "example": false
+                },
+                "email": {
+                    "type": "string",
+                    "format": "email"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "login": {
+                    "type": "string",
+                    "maxLength": 20,
+                    "minLength": 5
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 25,
+                    "minLength": 2
+                },
+                "password": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "string"
+                },
+                "token": {
+                    "type": "string"
+                },
+                "updated": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2021-05-25T00:53:16.535668Z"
+                }
+            }
+        },
         "handler.SignupResponse": {
             "type": "object",
             "required": [

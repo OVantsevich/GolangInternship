@@ -1,4 +1,4 @@
-package repository
+package service
 
 import (
 	"context"
@@ -6,5 +6,5 @@ import (
 )
 
 type Stream interface {
-	CreatingUser(ctx context.Context, user *model.User) error
+	ProduceUser(ctx context.Context, user *model.User) error
 }

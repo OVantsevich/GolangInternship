@@ -1,4 +1,4 @@
-package handler
+package internal
 
 import (
 	"github.com/labstack/echo/v4"

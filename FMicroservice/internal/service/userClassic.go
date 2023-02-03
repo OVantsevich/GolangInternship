@@ -4,16 +4,15 @@ import (
 	"context"
 	"fmt"
 	"github.com/OVantsevich/GolangInternship/FMicroservice/internal/model"
-	"github.com/OVantsevich/GolangInternship/FMicroservice/internal/repository"
 	"github.com/golang-jwt/jwt/v4"
 	passwordvalidator "github.com/wagslane/go-password-validator"
 	"time"
 )
 
 type UserClassic struct {
-	rps    repository.User
-	cache  repository.Cache
-	stream repository.Stream
+	rps    User
+	cache  Cache
+	stream Stream
 	jwtKey []byte
 }
 
@@ -23,7 +22,7 @@ type CustomClaims struct {
 	jwt.RegisteredClaims
 }
 
-func NewUserServiceClassic(rps repository.User, cache repository.Cache, stream repository.Stream, key string) *UserClassic {
+func NewUserServiceClassic(rps User, cache Cache, stream Stream, key string) *UserClassic {
 	return &UserClassic{rps: rps, cache: cache, stream: stream, jwtKey: []byte(key)}
 }
 
@@ -43,7 +42,10 @@ func (u *UserClassic) Signup(ctx context.Context, user *model.User) (accessToken
 		return "", "", nil, fmt.Errorf("userService - Signup - CreateJWT: %w", err)
 	}
 
-	u.stream.CreatingUser(ctx, user)
+	err = u.stream.ProduceUser(ctx, user)
+	if err != nil {
+		return "", "", nil, fmt.Errorf("userService - Signup - ProduceUser: %w", err)
+	}
 
 	return
 }
@@ -103,12 +105,13 @@ func (u *UserClassic) Delete(ctx context.Context, login string) (err error) {
 }
 
 func (u *UserClassic) GetByLogin(ctx context.Context, login string) (user *model.User, err error) {
-	user, err = u.cache.GetByLogin(ctx, login)
-	if err != nil {
+	var notCached bool
+	user, notCached, err = u.cache.GetByLogin(ctx, login)
+	if err != nil && !notCached {
 		return nil, fmt.Errorf("userService - GetByLogin - cache - GetByLogin: %w", err)
 	}
 
-	if user == nil {
+	if notCached {
 		if user, err = u.rps.GetUserByLogin(ctx, login); err != nil {
 			return nil, fmt.Errorf("userService - GetByLogin - Repository - GetByLogin: %w", err)
 		}

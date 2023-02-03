@@ -11,7 +11,7 @@ import (
 )
 
 type UserClassic struct {
-	s service.User
+	s User
 }
 
 type TokenResponse struct {
@@ -24,7 +24,7 @@ type SignupResponse struct {
 	*TokenResponse
 }
 
-func NewUserHandlerClassic(s service.User) *UserClassic {
+func NewUserHandlerClassic(s User) *UserClassic {
 	return &UserClassic{s: s}
 }
 
@@ -85,7 +85,6 @@ func (h *UserClassic) Signup(c echo.Context) (err error) {
 // @Router       /login [post]
 func (h *UserClassic) Login(c echo.Context) (err error) {
 	user := &model.User{}
-
 	if err = c.Bind(user); err != nil {
 		logrus.Error(fmt.Errorf("userHandler - Login - Bind: %w", err))
 		return

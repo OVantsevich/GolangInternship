@@ -39,11 +39,6 @@ func upload(c echo.Context) error {
 	name := c.FormValue("name")
 	email := c.FormValue("email")
 
-	//-----------
-	// Read file
-	//-----------
-
-	// Source
 	file, err := c.FormFile("file")
 	if err != nil {
 		return err
@@ -54,14 +49,12 @@ func upload(c echo.Context) error {
 	}
 	defer src.Close()
 
-	// Destination
 	dst, err := os.Create(file.Filename)
 	if err != nil {
 		return err
 	}
 	defer dst.Close()
 
-	// Copy
 	if _, err = io.Copy(dst, src); err != nil {
 		return err
 	}
@@ -111,7 +104,7 @@ func main() {
 		},
 	}))
 
-	var repos repository.User
+	var repos service.User
 	repos, err = DBConnection(cfg)
 	if err != nil {
 		logrus.Fatal(err)
@@ -126,7 +119,7 @@ func main() {
 	rds := &repository.Redis{Client: *client}
 
 	rds.RedisStreamInit(context.Background())
-	rds.CreatConsumer()
+	rds.ConsumeUser("example")
 
 	userService := service.NewUserServiceClassic(repos, rds, rds, cfg.JwtKey)
 	userHandler := handler.NewUserHandlerClassic(userService)
@@ -165,17 +158,17 @@ func main() {
 	e.Logger.Fatal(e.Start(":12345"))
 }
 
-func DBConnection(Cfg *config.Config) (repository.User, error) {
+func DBConnection(Cfg *config.Config) (service.User, error) {
 	switch Cfg.CurrentDB {
 	case "postgres":
-		pool, err := pgxpool.New(context.Background(), Cfg.PostgresUrl)
+		pool, err := pgxpool.New(context.Background(), Cfg.PostgresURL)
 		if err != nil {
 			return nil, fmt.Errorf("invalid configuration data: %v", err)
 		}
 		if err = pool.Ping(context.Background()); err != nil {
 			return nil, fmt.Errorf("database not responding: %v", err)
 		}
-		return &repository.PUser{Pool: pool}, nil
+		return repository.NewPostgresRepository(pool), nil
 	case "mongo":
 		client, err := mongo.Connect(context.Background(), options.Client().ApplyURI(Cfg.MongoURL))
 		if err != nil {

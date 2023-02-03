@@ -14,7 +14,7 @@ type Redis struct {
 	Client redis.Client
 }
 
-func (c *Redis) GetByLogin(ctx context.Context, login string) (user *model.User, err error) {
+func (c *Redis) GetByLogin(ctx context.Context, login string) (user *model.User, notCached bool, err error) {
 	mycache := cache.New(&cache.Options{
 		Redis: c.Client,
 	})
@@ -23,9 +23,10 @@ func (c *Redis) GetByLogin(ctx context.Context, login string) (user *model.User,
 	err = mycache.Get(ctx, login, user)
 	if err != nil {
 		if err.Error() == "cache: key is missing" {
-			return nil, nil
+			notCached = true
+			return
 		}
-		return nil, fmt.Errorf("redis - GetByLogin - Get: %w", err)
+		err = fmt.Errorf("redis - GetByLogin - Get: %w", err)
 	}
 
 	return
@@ -63,43 +64,40 @@ func (c *Redis) RedisStreamInit(ctx context.Context) error {
 	return nil
 }
 
-func (c *Redis) CreatingUser(ctx context.Context, user *model.User) error {
+func (c *Redis) ProduceUser(ctx context.Context, user *model.User) error {
 	mu, _ := json.Marshal(user)
 	_, err := c.Client.XAdd(ctx, &redis.XAddArgs{
 		Stream: "example",
 		Values: map[string]interface{}{
-			"user": mu,
+			"data": mu,
 		},
 	}).Result()
 	if err != nil {
 		return fmt.Errorf("redis - RedisStreamInit - XAdd: %w", err)
 	}
-	streams := c.Client.XReadStreams(ctx, "example").Val()
-	for _, str := range streams {
-		for _, msg := range str.Messages {
-			for _, val := range msg.Values {
-				logrus.Infof("user created: %v", val)
+	return nil
+}
+
+func (c *Redis) ConsumeUser(stream string) {
+	go func() {
+		for {
+			var err error
+			var data []redis.XMessage
+			data, err = c.Client.XRangeN(context.Background(), stream, "-", "+", 10).Result()
+			if err != nil {
+				logrus.Error(err)
 			}
-		}
-	}
-	return nil
-}
-
-func (c *Redis) CreatConsumer() error {
-	go c.UserCreatHandler("example")
-	return nil
-}
-
-func (c *Redis) UserCreatHandler(stream string) {
-	ctx := context.Background()
-	for {
-		streams := c.Client.XReadStreams(ctx, stream).Val()
-		for _, str := range streams {
-			for _, msg := range str.Messages {
-				for _, val := range msg.Values {
-					logrus.Infof("user created: %v", val)
+			for _, element := range data {
+				dataFromStream := []byte(element.Values["data"].(string))
+				var user = &model.User{}
+				err := json.Unmarshal(dataFromStream, user)
+				if err != nil {
+					logrus.Error(err)
+					continue
 				}
+				logrus.Infof("user created:%v", user.Login)
+				c.Client.XDel(context.Background(), stream, element.ID)
 			}
 		}
-	}
+	}()
 }

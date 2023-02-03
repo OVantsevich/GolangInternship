@@ -12,6 +12,10 @@ type PUser struct {
 	Pool *pgxpool.Pool
 }
 
+func NewPostgresRepository(pool *pgxpool.Pool) *PUser {
+	return &PUser{Pool: pool}
+}
+
 func (r *PUser) CreateUser(ctx context.Context, user *model.User) (*model.User, error) {
 	user.Created = time.Now()
 	user.Updated = time.Now()

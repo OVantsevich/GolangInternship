@@ -1,4 +1,4 @@
-package repository
+package service
 
 import (
 	"context"
@@ -6,6 +6,6 @@ import (
 )
 
 type Cache interface {
-	GetByLogin(ctx context.Context, login string) (*model.User, error)
+	GetByLogin(ctx context.Context, login string) (*model.User, bool, error)
 	CreateUser(ctx context.Context, user *model.User) error
 }

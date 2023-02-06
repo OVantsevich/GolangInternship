@@ -1,7 +1,7 @@
 package service
 
 import (
-	"GolangInternship/FMicroservice/internal/model"
+	"GolangInternship/FMicroserviceGRPC/internal/model"
 	"context"
 	"fmt"
 	"github.com/golang-jwt/jwt/v4"
@@ -10,7 +10,7 @@ import (
 )
 
 type UserClassic struct {
-	rps    UserRepository
+	rps    User
 	cache  Cache
 	stream Stream
 	jwtKey []byte
@@ -22,7 +22,7 @@ type CustomClaims struct {
 	jwt.RegisteredClaims
 }
 
-func NewUserServiceClassic(rps UserRepository, cache Cache, stream Stream, key string) *UserClassic {
+func NewUserServiceClassic(rps User, cache Cache, stream Stream, key string) *UserClassic {
 	return &UserClassic{rps: rps, cache: cache, stream: stream, jwtKey: []byte(key)}
 }
 

@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"GolangInternship/FMicroservice/internal/model"
+	"GolangInternship/FMicroserviceGRPC/internal/model"
 	"context"
 	"fmt"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -69,7 +69,7 @@ func TestMain(m *testing.M) {
 			"POSTGRES_DB=userService",
 			"listen_addresses = '*'",
 		},
-		Mounts: []string{"/home/olegvantsevich/GolandProjects/GolangInternship/FMicroservice/migrations:/docker-entrypoint-initdb.d"},
+		Mounts: []string{"/home/olegvantsevich/GolandProjects/GolangInternship/FMicroserviceGRPC/migrations:/docker-entrypoint-initdb.d"},
 	})
 	if err != nil {
 		logrus.Fatalf("Could not start resource: %s", err)

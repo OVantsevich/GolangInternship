@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"GolangInternship/FMicroservice/internal/model"
+	"GolangInternship/FMicroserviceGRPC/internal/model"
 	"context"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"

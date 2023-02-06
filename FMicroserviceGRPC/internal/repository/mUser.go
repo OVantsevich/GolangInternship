@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"GolangInternship/FMicroservice/internal/model"
+	"GolangInternship/FMicroserviceGRPC/internal/model"
 	"context"
 	"fmt"
 	"github.com/google/uuid"

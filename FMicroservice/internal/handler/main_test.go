@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"github.com/OVantsevich/GolangInternship/FMicroservice/internal/model"
+	"GolangInternship/FMicroservice/internal/model"
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
 	"net/http"

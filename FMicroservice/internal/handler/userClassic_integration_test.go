@@ -1,9 +1,9 @@
 package handler
 
 import (
+	"GolangInternship/FMicroservice/internal"
 	"context"
 	"fmt"
-	"github.com/OVantsevich/GolangInternship/FMicroservice/internal"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/ory/dockertest/v3"
 	"github.com/ory/dockertest/v3/docker"

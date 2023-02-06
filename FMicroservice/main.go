@@ -1,13 +1,13 @@
 package main
 
 import (
+	_ "GolangInternship/FMicroservice/docs"
+	"GolangInternship/FMicroservice/internal/config"
+	"GolangInternship/FMicroservice/internal/handler"
+	"GolangInternship/FMicroservice/internal/repository"
+	"GolangInternship/FMicroservice/internal/service"
 	"context"
 	"fmt"
-	_ "github.com/OVantsevich/GolangInternship/FMicroservice/docs"
-	"github.com/OVantsevich/GolangInternship/FMicroservice/internal/config"
-	"github.com/OVantsevich/GolangInternship/FMicroservice/internal/handler"
-	"github.com/OVantsevich/GolangInternship/FMicroservice/internal/repository"
-	"github.com/OVantsevich/GolangInternship/FMicroservice/internal/service"
 	"github.com/go-playground/validator/v10"
 	"github.com/go-redis/redis/v8"
 	"github.com/golang-jwt/jwt/v4"
@@ -104,7 +104,7 @@ func main() {
 		},
 	}))
 
-	var repos service.User
+	var repos service.UserRepository
 	repos, err = DBConnection(cfg)
 	if err != nil {
 		logrus.Fatal(err)
@@ -158,7 +158,7 @@ func main() {
 	e.Logger.Fatal(e.Start(":12345"))
 }
 
-func DBConnection(Cfg *config.Config) (service.User, error) {
+func DBConnection(Cfg *config.Config) (service.UserRepository, error) {
 	switch Cfg.CurrentDB {
 	case "postgres":
 		pool, err := pgxpool.New(context.Background(), Cfg.PostgresURL)

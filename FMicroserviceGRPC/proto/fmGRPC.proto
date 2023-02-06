@@ -1,0 +1,92 @@
+syntax = "proto3";
+
+service CRUD{
+  rpc Registration(RegistrationRequest)returns(RegistrationResponse){};
+  rpc GetUser(GetUserRequest)returns(GetUserResponse){};
+  rpc GetAllUsers(GetAllUsersRequest)returns(GetAllUsersResponse);
+  rpc DeleteUser(DeleteUserRequest)returns(Response);
+  rpc UpdateUser(UpdateUserRequest)returns(Response);
+  rpc Authentication(AuthenticationRequest)returns(AuthenticationResponse);
+  rpc RefreshMyTokens(RefreshTokensRequest)returns(RefreshTokensResponse);
+  rpc Logout(LogoutRequest)returns(Response);
+}
+
+message SignupRequest{
+  Person user=1;
+}
+
+message LoginRequest{
+  string accessToken = 1;
+  Person person = 2;
+  string id = 3;
+}
+
+message RefreshRequest{
+  string name = 2;
+  int32 age = 3;
+  bool works = 4;
+  string password = 5;
+}
+
+message UpdateRequest{
+  string id = 1;
+  string password = 2;
+}
+
+message DeleteRequest{
+  string refreshToken = 1;
+}
+
+message UserByLoginRequest{
+  string refreshToken = 1;
+}
+
+
+
+message RefreshTokensResponse{
+  string refreshToken = 1;
+  string accessToken = 2;
+}
+
+message GetUserRequest{
+  string accessToken = 1;
+  string id = 2;
+}
+
+message DeleteUserRequest{
+  string accessToken = 1;
+  string id = 2;
+}
+
+message GetUserResponse{
+  Person person = 1;
+}
+
+message RegistrationResponse{
+  string id = 1;
+}
+
+message GetAllUsersResponse{
+  repeated Person persons = 1;
+}
+
+message AuthenticationResponse{
+  string accessToken = 1;
+  string refreshToken = 2;
+}
+
+message Response{}
+
+message User{
+  string id = 1;
+  string login = 2;
+  string email = 3;
+  string password = 4;
+  string name = 5;
+  int32 age = 6;
+  string token = 7;
+  string role = 8;
+  bool deleted = 9;
+  string created = 10;
+  string updated = 11s;
+}

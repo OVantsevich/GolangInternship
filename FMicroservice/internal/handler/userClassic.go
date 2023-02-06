@@ -1,17 +1,17 @@
 package handler
 
 import (
+	"GolangInternship/FMicroservice/internal/model"
+	"GolangInternship/FMicroservice/internal/service"
 	"fmt"
-	"github.com/OVantsevich/GolangInternship/FMicroservice/internal/model"
-	"github.com/OVantsevich/GolangInternship/FMicroservice/internal/service"
 	"github.com/golang-jwt/jwt/v4"
-	echo "github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4"
 	"github.com/sirupsen/logrus"
 	"net/http"
 )
 
 type UserClassic struct {
-	s User
+	s UserService
 }
 
 type TokenResponse struct {
@@ -24,7 +24,7 @@ type SignupResponse struct {
 	*TokenResponse
 }
 
-func NewUserHandlerClassic(s User) *UserClassic {
+func NewUserHandlerClassic(s UserService) *UserClassic {
 	return &UserClassic{s: s}
 }
 

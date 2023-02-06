@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"GolangInternship/FMicroservice/internal/model"
+	"GolangInternship/FMicroserviceGRPC/internal/model"
 	"context"
 	"encoding/json"
 	"fmt"

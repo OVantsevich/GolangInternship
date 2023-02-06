@@ -1,11 +1,11 @@
 package handler
 
 import (
+	"GolangInternship/FMicroservice/internal/handler/mocks"
+	"GolangInternship/FMicroservice/internal/service"
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/OVantsevich/GolangInternship/FMicroservice/internal/service"
-	mocks "github.com/OVantsevich/GolangInternship/FMicroservice/mocks/service"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/mock"
@@ -18,7 +18,7 @@ import (
 
 func TestUser_Signup(t *testing.T) {
 	testInit()
-	s := mocks.NewUser(t)
+	s := mocks.NewUserService(t)
 	h := NewUserHandlerClassic(s)
 
 	for _, user := range testValidData {
@@ -80,7 +80,7 @@ func TestUser_Signup(t *testing.T) {
 
 func TestUserClassic_Login(t *testing.T) {
 	testInit()
-	s := mocks.NewUser(t)
+	s := mocks.NewUserService(t)
 	h := NewUserHandlerClassic(s)
 
 	for _, user := range testValidData {
@@ -118,7 +118,7 @@ func TestUserClassic_Login(t *testing.T) {
 
 func TestUserClassic_Refresh(t *testing.T) {
 	testInit()
-	s := mocks.NewUser(t)
+	s := mocks.NewUserService(t)
 	h := NewUserHandlerClassic(s)
 
 	for _, user := range testValidData {
@@ -168,7 +168,7 @@ func TestUserClassic_Refresh(t *testing.T) {
 
 func TestUserClassic_Update(t *testing.T) {
 	testInit()
-	s := mocks.NewUser(t)
+	s := mocks.NewUserService(t)
 	h := NewUserHandlerClassic(s)
 
 	for _, user := range testValidData {
@@ -243,7 +243,7 @@ func TestUserClassic_Update(t *testing.T) {
 
 func TestUserClassic_Delete(t *testing.T) {
 	testInit()
-	s := mocks.NewUser(t)
+	s := mocks.NewUserService(t)
 	h := NewUserHandlerClassic(s)
 
 	for _, user := range testValidData {

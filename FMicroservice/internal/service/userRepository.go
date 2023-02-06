@@ -1,11 +1,12 @@
 package service
 
 import (
+	"GolangInternship/FMicroservice/internal/model"
 	"context"
-	"github.com/OVantsevich/GolangInternship/FMicroservice/internal/model"
 )
 
-type User interface {
+//go:generate mockery --name=UserRepository --case=underscore --output=./mocks
+type UserRepository interface {
 	CreateUser(ctx context.Context, user *model.User) (*model.User, error)
 	GetUserByLogin(ctx context.Context, login string) (*model.User, error)
 	UpdateUser(ctx context.Context, login string, user *model.User) error

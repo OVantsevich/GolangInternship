@@ -1,7 +1,7 @@
 package service
 
 import (
-	"GolangInternship/FMicroservice/internal/model"
+	"GolangInternship/FMicroserviceGRPC/internal/model"
 	"context"
 	"fmt"
 	"github.com/golang-jwt/jwt/v4"
@@ -55,7 +55,7 @@ func TestUser_Signup(t *testing.T) {
 	repository := NewMockUser(t)
 	service = NewUserServiceClassic(repository, cache, stream, "secret-key")
 	repository.On("CreateUser", mock.AnythingOfType("*context.emptyCtx"),
-		mock.AnythingOfType("*model.UserRepository")).Return(nil, nil)
+		mock.AnythingOfType("*model.User")).Return(nil, nil)
 	repository.On("RefreshUser", mock.AnythingOfType("*context.emptyCtx"),
 		mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return(nil)
 
@@ -166,12 +166,12 @@ func TestUser_Update(t *testing.T) {
 	ctx := context.Background()
 	var err error
 	repository.On("UpdateUser", mock.AnythingOfType("*context.emptyCtx"),
-		mock.AnythingOfType("string"), mock.AnythingOfType("*model.UserRepository")).Return(nil).Once()
+		mock.AnythingOfType("string"), mock.AnythingOfType("*model.User")).Return(nil).Once()
 	err = service.Update(ctx, testValidData[0].Login, &testValidData[0])
 	require.NoError(t, err)
 
 	repository.On("UpdateUser", mock.AnythingOfType("*context.emptyCtx"),
-		mock.AnythingOfType("string"), mock.AnythingOfType("*model.UserRepository")).Return(fmt.Errorf("something went wrong")).Once()
+		mock.AnythingOfType("string"), mock.AnythingOfType("*model.User")).Return(fmt.Errorf("something went wrong")).Once()
 	err = service.Update(ctx, testValidData[0].Login, &testValidData[0])
 	require.Error(t, err)
 }

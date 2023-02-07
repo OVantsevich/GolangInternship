@@ -9,10 +9,30 @@ import (
 	"time"
 )
 
+//go:generate mockery --name=UserClassicStream --case=underscore --output=./mocks
+type UserClassicStream interface {
+	ProduceUser(ctx context.Context, user *model.User) error
+}
+
+//go:generate mockery --name=UserClassicCache --case=underscore --output=./mocks
+type UserClassicCache interface {
+	GetByLogin(ctx context.Context, login string) (*model.User, bool, error)
+	CreateUser(ctx context.Context, user *model.User) error
+}
+
+//go:generate mockery --name=UserClassicRepository --case=underscore --output=./mocks
+type UserClassicRepository interface {
+	CreateUser(ctx context.Context, user *model.User) (*model.User, error)
+	GetUserByLogin(ctx context.Context, login string) (*model.User, error)
+	UpdateUser(ctx context.Context, login string, user *model.User) error
+	RefreshUser(ctx context.Context, login, token string) error
+	DeleteUser(ctx context.Context, login string) error
+}
+
 type UserClassic struct {
-	rps    UserRepository
-	cache  Cache
-	stream Stream
+	rps    UserClassicRepository
+	cache  UserClassicCache
+	stream UserClassicStream
 	jwtKey []byte
 }
 
@@ -22,7 +42,7 @@ type CustomClaims struct {
 	jwt.RegisteredClaims
 }
 
-func NewUserServiceClassic(rps UserRepository, cache Cache, stream Stream, key string) *UserClassic {
+func NewUserServiceClassic(rps UserClassicRepository, cache UserClassicCache, stream UserClassicStream, key string) *UserClassic {
 	return &UserClassic{rps: rps, cache: cache, stream: stream, jwtKey: []byte(key)}
 }
 

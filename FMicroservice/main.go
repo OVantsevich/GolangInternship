@@ -104,7 +104,7 @@ func main() {
 		},
 	}))
 
-	var repos service.UserRepository
+	var repos service.UserClassicRepository
 	repos, err = DBConnection(cfg)
 	if err != nil {
 		logrus.Fatal(err)
@@ -158,7 +158,7 @@ func main() {
 	e.Logger.Fatal(e.Start(":12345"))
 }
 
-func DBConnection(Cfg *config.Config) (service.UserRepository, error) {
+func DBConnection(Cfg *config.Config) (service.UserClassicRepository, error) {
 	switch Cfg.CurrentDB {
 	case "postgres":
 		pool, err := pgxpool.New(context.Background(), Cfg.PostgresURL)

@@ -21,7 +21,8 @@ var mTestValidData = []MongoUser{
 			Email:    `LOGIN1@gmail.com`,
 			Password: `LOGIN123456789`,
 		},
-		role: "user",
+		Role:    "user",
+		Deleted: false,
 	},
 	{
 		User: &model.User{
@@ -31,7 +32,8 @@ var mTestValidData = []MongoUser{
 			Email:    `LOGIN2@gmail.com`,
 			Password: `PASSWORD123456789`,
 		},
-		role: "user",
+		Role:    "user",
+		Deleted: false,
 	},
 }
 var mTestNoValidData = []MongoUser{
@@ -43,7 +45,8 @@ var mTestNoValidData = []MongoUser{
 			Email:    `LOGIN2@gmail.com`,
 			Password: `PASSWORD123`,
 		},
-		role: "user",
+		Role:    "user",
+		Deleted: false,
 	},
 	{
 		User: &model.User{
@@ -53,7 +56,8 @@ var mTestNoValidData = []MongoUser{
 			Email:    `LOGIN1@gmail.com`,
 			Password: `LOGIN23102002`,
 		},
-		role: "user",
+		Role:    "user",
+		Deleted: false,
 	},
 }
 
@@ -102,9 +106,9 @@ func TestMUser_GetUserByLogin(t *testing.T) {
 		require.NoError(t, err, "create error")
 
 		user, err = mrps.GetUserByLogin(ctx, u.Login)
+		require.NoError(t, err, "get by login error")
 		require.Equal(t, u.Password, user.Password)
 		require.Equal(t, u.Email, user.Email)
-		require.NoError(t, err, "get by login error")
 
 		_, err = mrps.Client.Database("userService").Collection("users").DeleteOne(
 			ctx, bson.D{{"user.login", u.Login}})

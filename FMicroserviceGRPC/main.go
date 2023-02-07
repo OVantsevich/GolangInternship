@@ -28,7 +28,7 @@ func main() {
 		logrus.Fatal(err)
 	}
 
-	var repos service.UserRepository
+	var repos service.UserClassicRepository
 	repos, err = DBConnection(cfg)
 	if err != nil {
 		logrus.Fatal(err)
@@ -56,7 +56,7 @@ func main() {
 	}
 }
 
-func DBConnection(Cfg *config.Config) (service.UserRepository, error) {
+func DBConnection(Cfg *config.Config) (service.UserClassicRepository, error) {
 	switch Cfg.CurrentDB {
 	case "postgres":
 		pool, err := pgxpool.New(context.Background(), Cfg.PostgresURL)

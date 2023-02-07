@@ -16,7 +16,8 @@ type MUser struct {
 
 type MongoUser struct {
 	*model.User `bson:"user"`
-	role        string `bson:"role"`
+	Role        string `bson:"Role"`
+	Deleted     bool   `bson:"Deleted"`
 }
 
 func (r *MUser) CreateUser(ctx context.Context, user *model.User) (*model.User, error) {
@@ -31,11 +32,11 @@ func (r *MUser) CreateUser(ctx context.Context, user *model.User) (*model.User, 
 			Name:     user.Name,
 			Age:      user.Age,
 			Token:    "",
-			Deleted:  false,
 			Created:  time.Now(),
 			Updated:  time.Now(),
 		},
-		role: "user"})
+		Role:    "user",
+		Deleted: false})
 	if err != nil {
 		return nil, fmt.Errorf("MUser - CreateUser - InsertOne: %w", err)
 	}
@@ -47,7 +48,7 @@ func (r *MUser) GetUserByLogin(ctx context.Context, login string) (*model.User, 
 	user := MongoUser{}
 
 	collection := r.Client.Database("userService").Collection("users")
-	result := collection.FindOne(ctx, bson.D{{"user.login", login}, {"user.deleted", false}})
+	result := collection.FindOne(ctx, bson.D{{"user.login", login}, {"Deleted", false}})
 	err := result.Decode(&user)
 	if err != nil {
 		return nil, fmt.Errorf("MUser - GetUserByName - Decode: %w", err)
@@ -58,7 +59,7 @@ func (r *MUser) GetUserByLogin(ctx context.Context, login string) (*model.User, 
 func (r *MUser) UpdateUser(ctx context.Context, login string, user *model.User) error {
 	collection := r.Client.Database("userService").Collection("users")
 
-	filter := bson.D{{"user.login", login}, {"user.deleted", false}}
+	filter := bson.D{{"user.login", login}, {"Deleted", false}}
 	update := bson.D{{"$set", bson.D{
 		{"user.email", user.Email},
 		{"user.name", user.Name},
@@ -77,7 +78,7 @@ func (r *MUser) UpdateUser(ctx context.Context, login string, user *model.User) 
 func (r *MUser) RefreshUser(ctx context.Context, login, token string) error {
 	collection := r.Client.Database("userService").Collection("users")
 
-	filter := bson.D{{"user.login", login}, {"user.deleted", false}}
+	filter := bson.D{{"user.login", login}, {"Deleted", false}}
 	update := bson.D{{"$set", bson.D{
 		{"user.token", token},
 		{"user.updated", time.Now()}}}}
@@ -94,9 +95,9 @@ func (r *MUser) RefreshUser(ctx context.Context, login, token string) error {
 func (r *MUser) DeleteUser(ctx context.Context, login string) error {
 	collection := r.Client.Database("userService").Collection("users")
 
-	filter := bson.D{{"user.login", login}, {"user.deleted", false}}
+	filter := bson.D{{"user.login", login}, {"Deleted", false}}
 	update := bson.D{{"$set", bson.D{
-		{"user.deleted", true},
+		{"Deleted", true},
 		{"user.updated", time.Now()}}}}
 
 	userResult := model.User{}

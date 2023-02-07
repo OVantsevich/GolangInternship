@@ -2,6 +2,7 @@ package service
 
 import (
 	"GolangInternship/FMicroservice/internal/model"
+	"GolangInternship/FMicroservice/internal/service/mocks"
 	"context"
 	"fmt"
 	"github.com/golang-jwt/jwt/v4"
@@ -50,14 +51,16 @@ var testNoValidData = []model.User{
 }
 
 func TestUser_Signup(t *testing.T) {
-	cache := NewMockCache(t)
-	stream := NewMockStream(t)
-	repository := NewMockUser(t)
+	cache := mocks.NewCache(t)
+	stream := mocks.NewStream(t)
+	repository := mocks.NewUserRepository(t)
 	service = NewUserServiceClassic(repository, cache, stream, "secret-key")
 	repository.On("CreateUser", mock.AnythingOfType("*context.emptyCtx"),
-		mock.AnythingOfType("*model.UserRepository")).Return(nil, nil)
+		mock.AnythingOfType("*model.User")).Return(nil, nil)
 	repository.On("RefreshUser", mock.AnythingOfType("*context.emptyCtx"),
 		mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return(nil)
+	stream.On("ProduceUser", mock.AnythingOfType("*context.emptyCtx"),
+		mock.AnythingOfType("*model.User")).Return(nil)
 
 	ctx := context.Background()
 	var err error
@@ -88,9 +91,9 @@ func TestUser_Signup(t *testing.T) {
 }
 
 func TestUser_Login(t *testing.T) {
-	cache := NewMockCache(t)
-	stream := NewMockStream(t)
-	repository := NewMockUser(t)
+	cache := mocks.NewCache(t)
+	stream := mocks.NewStream(t)
+	repository := mocks.NewUserRepository(t)
 	service = NewUserServiceClassic(repository, cache, stream, "secret-key")
 	repository.On("RefreshUser", mock.AnythingOfType("*context.emptyCtx"),
 		mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return(nil)
@@ -123,9 +126,9 @@ func TestUser_Login(t *testing.T) {
 }
 
 func TestUser_Refresh(t *testing.T) {
-	cache := NewMockCache(t)
-	stream := NewMockStream(t)
-	repository := NewMockUser(t)
+	cache := mocks.NewCache(t)
+	stream := mocks.NewStream(t)
+	repository := mocks.NewUserRepository(t)
 	service = NewUserServiceClassic(repository, cache, stream, "secret-key")
 	repository.On("RefreshUser", mock.AnythingOfType("*context.emptyCtx"),
 		mock.AnythingOfType("string"), mock.AnythingOfType("string")).Return(nil)
@@ -158,28 +161,28 @@ func TestUser_Refresh(t *testing.T) {
 }
 
 func TestUser_Update(t *testing.T) {
-	cache := NewMockCache(t)
-	stream := NewMockStream(t)
-	repository := NewMockUser(t)
+	cache := mocks.NewCache(t)
+	stream := mocks.NewStream(t)
+	repository := mocks.NewUserRepository(t)
 	service = NewUserServiceClassic(repository, cache, stream, "secret-key")
 
 	ctx := context.Background()
 	var err error
 	repository.On("UpdateUser", mock.AnythingOfType("*context.emptyCtx"),
-		mock.AnythingOfType("string"), mock.AnythingOfType("*model.UserRepository")).Return(nil).Once()
+		mock.AnythingOfType("string"), mock.AnythingOfType("*model.User")).Return(nil).Once()
 	err = service.Update(ctx, testValidData[0].Login, &testValidData[0])
 	require.NoError(t, err)
 
 	repository.On("UpdateUser", mock.AnythingOfType("*context.emptyCtx"),
-		mock.AnythingOfType("string"), mock.AnythingOfType("*model.UserRepository")).Return(fmt.Errorf("something went wrong")).Once()
+		mock.AnythingOfType("string"), mock.AnythingOfType("*model.User")).Return(fmt.Errorf("something went wrong")).Once()
 	err = service.Update(ctx, testValidData[0].Login, &testValidData[0])
 	require.Error(t, err)
 }
 
 func TestUser_Delete(t *testing.T) {
-	cache := NewMockCache(t)
-	stream := NewMockStream(t)
-	repository := NewMockUser(t)
+	cache := mocks.NewCache(t)
+	stream := mocks.NewStream(t)
+	repository := mocks.NewUserRepository(t)
 	service = NewUserServiceClassic(repository, cache, stream, "secret-key")
 
 	ctx := context.Background()

@@ -3,7 +3,6 @@ module GolangInternship/FMicroservice
 go 1.19
 
 require (
-	GolangInternship/FMicroservice v0.0.0-20230203153511-3e06692a4d7f
 	github.com/go-playground/validator/v10 v10.11.1
 	github.com/go-redis/cache/v8 v8.4.4
 	github.com/go-redis/redis/v8 v8.11.3

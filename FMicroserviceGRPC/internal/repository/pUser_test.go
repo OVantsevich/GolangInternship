@@ -50,7 +50,7 @@ var testNoValidData = []model.User{
 var db *pgxpool.Pool
 
 func TestMain(m *testing.M) {
-	pool, err := dockertest.NewPool("")
+	pool, err := dockertest.NewPool("unix:///home/olegvantsevich/.docker/desktop/docker.sock")
 	if err != nil {
 		logrus.Fatalf("Could not construct pool: %s", err)
 	}
@@ -69,7 +69,7 @@ func TestMain(m *testing.M) {
 			"POSTGRES_DB=userService",
 			"listen_addresses = '*'",
 		},
-		Mounts: []string{"/home/olegvantsevich/GolandProjects/GolangInternship/FMicroserviceGRPC/migrations:/docker-entrypoint-initdb.d"},
+		Mounts: []string{"/home/olegvantsevich/GolandProjects/GolangInternship/FMicroservice/migrations:/docker-entrypoint-initdb.d"},
 	})
 	if err != nil {
 		logrus.Fatalf("Could not start resource: %s", err)

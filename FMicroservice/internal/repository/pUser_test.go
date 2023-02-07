@@ -50,7 +50,7 @@ var testNoValidData = []model.User{
 var db *pgxpool.Pool
 
 func TestMain(m *testing.M) {
-	pool, err := dockertest.NewPool("")
+	pool, err := dockertest.NewPool("unix:///home/olegvantsevich/.docker/desktop/docker.sock")
 	if err != nil {
 		logrus.Fatalf("Could not construct pool: %s", err)
 	}

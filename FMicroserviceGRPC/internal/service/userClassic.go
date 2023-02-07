@@ -4,16 +4,19 @@ import (
 	"GolangInternship/FMicroserviceGRPC/internal/model"
 	"context"
 	"fmt"
+	"github.com/go-playground/validator/v10"
 	"github.com/golang-jwt/jwt/v4"
 	passwordvalidator "github.com/wagslane/go-password-validator"
 	"time"
 )
 
 type UserClassic struct {
-	rps    User
+	rps    UserRepository
 	cache  Cache
 	stream Stream
 	jwtKey []byte
+
+	*validator.Validate
 }
 
 type CustomClaims struct {
@@ -22,21 +25,26 @@ type CustomClaims struct {
 	jwt.RegisteredClaims
 }
 
-func NewUserServiceClassic(rps User, cache Cache, stream Stream, key string) *UserClassic {
-	return &UserClassic{rps: rps, cache: cache, stream: stream, jwtKey: []byte(key)}
+func NewUserServiceClassic(rps UserRepository, cache Cache, stream Stream, key string) *UserClassic {
+	return &UserClassic{rps: rps, cache: cache, stream: stream, jwtKey: []byte(key), Validate: validator.New()}
 }
 
-func (u *UserClassic) Signup(ctx context.Context, user *model.User) (accessToken, refreshToken string, user2 *model.User, err error) {
+func (u *UserClassic) Signup(ctx context.Context, user *model.User) (accessToken, refreshToken string, userResult *model.User, err error) {
 
 	if err = passwordvalidator.Validate(user.Password, 50); err != nil {
 		return "", "", nil, fmt.Errorf("userService - Signup - Validate: %w", err)
 	}
+	if err = u.Struct(user); err != nil {
+		err = fmt.Errorf("userService - Signup - Struct: %w", err)
+		return
+	}
 
-	if user2, err = u.rps.CreateUser(ctx, user); err != nil {
+	if userResult, err = u.rps.CreateUser(ctx, user); err != nil {
 		return "", "", nil, fmt.Errorf("userService - Signup - CreateUser: %w", err)
 	}
 
 	user.Role = "user"
+	userResult.Role = "user"
 	accessToken, refreshToken, err = u.CreateJWT(ctx, user)
 	if err != nil {
 		return "", "", nil, fmt.Errorf("userService - Signup - CreateJWT: %w", err)
@@ -89,6 +97,10 @@ func (u *UserClassic) Refresh(ctx context.Context, login, userRefreshToken strin
 }
 
 func (u *UserClassic) Update(ctx context.Context, login string, user *model.User) (err error) {
+	if err = u.Struct(user); err != nil {
+		return fmt.Errorf("userService - Update - Struct: %w", err)
+	}
+
 	if err = u.rps.UpdateUser(ctx, login, user); err != nil {
 		return fmt.Errorf("userService - Update - UpdateUser: %w", err)
 	}

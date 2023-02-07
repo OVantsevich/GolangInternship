@@ -1,78 +1,73 @@
 syntax = "proto3";
+option go_package = ".";
 
-service CRUD{
-  rpc Registration(RegistrationRequest)returns(RegistrationResponse){};
-  rpc GetUser(GetUserRequest)returns(GetUserResponse){};
-  rpc GetAllUsers(GetAllUsersRequest)returns(GetAllUsersResponse);
-  rpc DeleteUser(DeleteUserRequest)returns(Response);
-  rpc UpdateUser(UpdateUserRequest)returns(Response);
-  rpc Authentication(AuthenticationRequest)returns(AuthenticationResponse);
-  rpc RefreshMyTokens(RefreshTokensRequest)returns(RefreshTokensResponse);
-  rpc Logout(LogoutRequest)returns(Response);
+service UserService{
+  rpc Signup(SignupRequest)returns(SignupResponse){};
+  rpc Login(LoginRequest)returns(LoginResponse){};
+  rpc Refresh(RefreshRequest)returns(RefreshResponse);
+  rpc Update(UpdateRequest)returns(UpdateResponse);
+  rpc Delete(DeleteRequest)returns(DeleteResponse);
+  rpc UserByLogin(UserByLoginRequest)returns(UserByLoginResponse);
 }
 
 message SignupRequest{
-  Person user=1;
+  string login = 1;
+  string email = 2;
+  string password = 3;
+  string name = 4;
+  int32 age = 5;
 }
 
 message LoginRequest{
-  string accessToken = 1;
-  Person person = 2;
-  string id = 3;
-}
-
-message RefreshRequest{
-  string name = 2;
-  int32 age = 3;
-  bool works = 4;
-  string password = 5;
-}
-
-message UpdateRequest{
-  string id = 1;
+  string login = 1;
   string password = 2;
 }
 
-message DeleteRequest{
+message RefreshRequest{
   string refreshToken = 1;
+  string login = 2;
+}
+
+message UpdateRequest{
+  User user = 1;
+  string accessToken = 2;
+}
+
+message DeleteRequest{
+  string accessToken = 1;
 }
 
 message UserByLoginRequest{
-  string refreshToken = 1;
+  string accessToken = 1;
 }
 
 
+message SignupResponse{
+  User user = 1;
+  string refreshToken = 2;
+  string accessToken = 3;
+}
 
-message RefreshTokensResponse{
+message LoginResponse{
   string refreshToken = 1;
   string accessToken = 2;
 }
 
-message GetUserRequest{
-  string accessToken = 1;
-  string id = 2;
+message RefreshResponse{
+  string refreshToken = 1;
+  string accessToken = 2;
 }
 
-message DeleteUserRequest{
-  string accessToken = 1;
-  string id = 2;
+message UpdateResponse{
+  string login = 1;
 }
 
-message GetUserResponse{
-  Person person = 1;
+message DeleteResponse{
+  string login = 1;
 }
 
-message RegistrationResponse{
-  string id = 1;
-}
-
-message GetAllUsersResponse{
-  repeated Person persons = 1;
-}
-
-message AuthenticationResponse{
-  string accessToken = 1;
-  string refreshToken = 2;
+message UserByLoginResponse{
+  User user = 1;
 }
 
 message Response{}
@@ -88,5 +83,5 @@ message User{
   string role = 8;
   bool deleted = 9;
   string created = 10;
-  string updated = 11s;
+  string updated = 11;
 }

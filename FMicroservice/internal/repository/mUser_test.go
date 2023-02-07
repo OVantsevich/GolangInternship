@@ -1,18 +1,21 @@
 package repository
 
 import (
-	"GolangInternship/FMicroservice/internal/model"
 	"context"
+	"testing"
+
+	"GolangInternship/FMicroservice/internal/model"
+
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"testing"
 )
 
 var mrps *MUser
 
-var mTestValidData = []MongoUser{
+var mTestValidData = []mongoUser{
 	{
 		User: &model.User{
 			Name:     `NAME`,
@@ -36,30 +39,6 @@ var mTestValidData = []MongoUser{
 		Deleted: false,
 	},
 }
-var mTestNoValidData = []MongoUser{
-	{
-		User: &model.User{
-			Name:     `nameEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE`,
-			Age:      22222,
-			Login:    `LOGIN2`,
-			Email:    `LOGIN2@gmail.com`,
-			Password: `PASSWORD123`,
-		},
-		Role:    "user",
-		Deleted: false,
-	},
-	{
-		User: &model.User{
-			Name:     `NAME`,
-			Age:      2,
-			Login:    `LOGIN1AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA`,
-			Email:    `LOGIN1@gmail.com`,
-			Password: `LOGIN23102002`,
-		},
-		Role:    "user",
-		Deleted: false,
-	},
-}
 
 func NewMRepository(client *mongo.Client) *MUser {
 	return &MUser{Client: client}
@@ -76,10 +55,12 @@ func TestMUser_CreateUser(t *testing.T) {
 		require.NoError(t, err, "create error")
 
 		_, err = mrps.Client.Database("userService").Collection("users").DeleteOne(
-			ctx, bson.D{{"user.login", u.Login}})
+			ctx, bson.D{primitive.E{Key: "user.login", Value: u.Login}})
+		require.NoError(t, err)
 	}
 
 	// Already existing data
+
 	for _, u := range mTestValidData {
 		_, err = mrps.CreateUser(ctx, u.User)
 		require.NoError(t, err, "create error")
@@ -88,7 +69,8 @@ func TestMUser_CreateUser(t *testing.T) {
 		require.Error(t, err, "create error")
 
 		_, err = mrps.Client.Database("userService").Collection("users").DeleteOne(
-			ctx, bson.D{{"user.login", u.Login}})
+			ctx, bson.D{primitive.E{Key: "user.login", Value: u.Login}})
+		require.NoError(t, err)
 	}
 }
 
@@ -101,7 +83,9 @@ func TestMUser_GetUserByLogin(t *testing.T) {
 	var user *model.User
 	for _, u := range mTestValidData {
 		_, err = mrps.Client.Database("userService").Collection("users").DeleteOne(
-			ctx, bson.D{{"user.login", u.Login}})
+			ctx, bson.D{primitive.E{Key: "user.login", Value: u.Login}})
+		require.NoError(t, err)
+
 		_, err = mrps.CreateUser(ctx, u.User)
 		require.NoError(t, err, "create error")
 
@@ -111,15 +95,18 @@ func TestMUser_GetUserByLogin(t *testing.T) {
 		require.Equal(t, u.Email, user.Email)
 
 		_, err = mrps.Client.Database("userService").Collection("users").DeleteOne(
-			ctx, bson.D{{"user.login", u.Login}})
+			ctx, bson.D{primitive.E{Key: "user.login", Value: u.Login}})
+		require.NoError(t, err)
 	}
 
 	//Non-existent data
+
 	for _, u := range mTestValidData {
 		_, err = mrps.Client.Database("userService").Collection("users").DeleteOne(
-			ctx, bson.D{{"user.login", u.Login}})
+			ctx, bson.D{primitive.E{Key: "user.login", Value: u.Login}})
+		require.NoError(t, err)
 
-		user, err = mrps.GetUserByLogin(ctx, u.Login)
+		_, err = mrps.GetUserByLogin(ctx, u.Login)
 		require.Error(t, err, "get by login error")
 	}
 }
@@ -133,7 +120,9 @@ func TestMUser_UpdateUser(t *testing.T) {
 	var user *model.User
 	for _, u := range mTestValidData {
 		_, err = mrps.Client.Database("userService").Collection("users").DeleteOne(
-			ctx, bson.D{{"user.login", u.Login}})
+			ctx, bson.D{primitive.E{Key: "user.login", Value: u.Login}})
+		require.NoError(t, err)
+
 		_, err = mrps.CreateUser(ctx, u.User)
 		require.NoError(t, err, "create error")
 
@@ -146,13 +135,16 @@ func TestMUser_UpdateUser(t *testing.T) {
 		require.NoError(t, err, "get by login error")
 
 		_, err = mrps.Client.Database("userService").Collection("users").DeleteOne(
-			ctx, bson.D{{"user.login", u.Login}})
+			ctx, bson.D{primitive.E{Key: "user.login", Value: u.Login}})
+		require.NoError(t, err)
 	}
 
 	//Non-existent data
+
 	for _, u := range mTestValidData {
 		_, err = mrps.Client.Database("userService").Collection("users").DeleteOne(
-			ctx, bson.D{{"user.login", u.Login}})
+			ctx, bson.D{primitive.E{Key: "user.login", Value: u.Login}})
+		require.NoError(t, err)
 
 		err = mrps.UpdateUser(ctx, u.Login, u.User)
 		require.Error(t, err, "update error")
@@ -168,7 +160,9 @@ func TestMUser_RefreshUser(t *testing.T) {
 	var user *model.User
 	for _, u := range mTestValidData {
 		_, err = mrps.Client.Database("userService").Collection("users").DeleteOne(
-			ctx, bson.D{{"user.login", u.Login}})
+			ctx, bson.D{primitive.E{Key: "user.login", Value: u.Login}})
+		require.NoError(t, err)
+
 		_, err = mrps.CreateUser(ctx, u.User)
 		require.NoError(t, err, "create error")
 
@@ -181,13 +175,16 @@ func TestMUser_RefreshUser(t *testing.T) {
 		require.NoError(t, err, "get by login error")
 
 		_, err = mrps.Client.Database("userService").Collection("users").DeleteOne(
-			ctx, bson.D{{"user.login", u.Login}})
+			ctx, bson.D{primitive.E{Key: "user.login", Value: u.Login}})
+		require.NoError(t, err)
 	}
 
 	//Non-existent data
+
 	for _, u := range mTestValidData {
 		_, err = mrps.Client.Database("userService").Collection("users").DeleteOne(
-			ctx, bson.D{{"user.login", u.Login}})
+			ctx, bson.D{primitive.E{Key: "user.login", Value: u.Login}})
+		require.NoError(t, err)
 
 		token := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJsb2dpbiI6InRlc3QxIiwiZXhwIjoxNjc0ODMxODE2fQ.jlD1_wrfdK8XjMut236sQDb7B7EOvVjflGZnNUS5o2g"
 		err = mrps.RefreshUser(ctx, u.Login, token)
@@ -203,7 +200,9 @@ func TestMUser_DeleteUser(t *testing.T) {
 
 	for _, u := range mTestValidData {
 		_, err = mrps.Client.Database("userService").Collection("users").DeleteOne(
-			ctx, bson.D{{"user.login", u.Login}})
+			ctx, bson.D{primitive.E{Key: "user.login", Value: u.Login}})
+		require.NoError(t, err)
+
 		_, err = mrps.CreateUser(ctx, u.User)
 		require.NoError(t, err, "create error")
 
@@ -214,13 +213,16 @@ func TestMUser_DeleteUser(t *testing.T) {
 		require.Error(t, err, "get by login error")
 
 		_, err = mrps.Client.Database("userService").Collection("users").DeleteOne(
-			ctx, bson.D{{"user.login", u.Login}})
+			ctx, bson.D{primitive.E{Key: "user.login", Value: u.Login}})
+		require.NoError(t, err)
 	}
 
 	//Non-existent data
+
 	for _, u := range mTestValidData {
 		_, err = mrps.Client.Database("userService").Collection("users").DeleteOne(
-			ctx, bson.D{{"user.login", u.Login}})
+			ctx, bson.D{primitive.E{Key: "user.login", Value: u.Login}})
+		require.NoError(t, err)
 
 		err = mrps.DeleteUser(ctx, u.Login)
 		require.Error(t, err, "delete error")

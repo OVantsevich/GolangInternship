@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"GolangInternship/FMicroservice/internal"
 	"context"
 	"fmt"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -23,7 +22,6 @@ var (
 var MongoURL = "mongodb://mongo:mongo@localhost:27017"
 var JwtKey = "JWTest"
 
-var handlerTest internal.User
 var postgresPool *pgxpool.Pool
 
 func TestMain(m *testing.M) {

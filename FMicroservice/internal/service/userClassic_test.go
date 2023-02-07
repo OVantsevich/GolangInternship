@@ -85,7 +85,7 @@ func TestUser_Signup(t *testing.T) {
 	}
 
 	for _, user := range testNoValidData {
-		at, rt, _, err = service.Signup(ctx, &user)
+		_, _, _, err = service.Signup(ctx, &user)
 		require.Error(t, err)
 	}
 }

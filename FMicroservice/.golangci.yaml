@@ -18,8 +18,6 @@ linters-settings:
       - captLocal
   gocyclo:
     min-complexity: 15
-  goimports:
-    local-prefixes: gitlab.effective-soft.com/yfc/shopservice
   revive:
     min-confidence: 0.8
   govet:

@@ -1,3 +1,4 @@
+// Package repository pUser
 package repository
 
 import (
@@ -8,14 +9,17 @@ import (
 	"time"
 )
 
+// PUser mongo entity
 type PUser struct {
 	Pool *pgxpool.Pool
 }
 
+// NewPostgresRepository creating new PUser
 func NewPostgresRepository(pool *pgxpool.Pool) *PUser {
 	return &PUser{Pool: pool}
 }
 
+// CreateUser create user
 func (r *PUser) CreateUser(ctx context.Context, user *model.User) (*model.User, error) {
 	user.Created = time.Now()
 	user.Updated = time.Now()
@@ -29,6 +33,7 @@ func (r *PUser) CreateUser(ctx context.Context, user *model.User) (*model.User, 
 	return user, nil
 }
 
+// GetUserByLogin get user by login
 func (r *PUser) GetUserByLogin(ctx context.Context, login string) (*model.User, error) {
 	user := model.User{}
 	err := r.Pool.QueryRow(ctx, `select u.name, u.age, u.login, u.password, u.token,u.email, r.name
@@ -43,6 +48,8 @@ func (r *PUser) GetUserByLogin(ctx context.Context, login string) (*model.User, 
 
 	return &user, nil
 }
+
+// UpdateUser update user
 func (r *PUser) UpdateUser(ctx context.Context, login string, user *model.User) error {
 	var id int
 	err := r.Pool.QueryRow(ctx, "update users set email=$1, name=$2, age=$3, updated=$4 where login=$5 and Deleted=false returning id",
@@ -54,6 +61,7 @@ func (r *PUser) UpdateUser(ctx context.Context, login string, user *model.User) 
 	return nil
 }
 
+// RefreshUser refresh user
 func (r *PUser) RefreshUser(ctx context.Context, login, token string) error {
 	var id int
 	err := r.Pool.QueryRow(ctx, "update users set token=$1, updated=$2 where login=$3 and Deleted=false returning id",
@@ -65,6 +73,7 @@ func (r *PUser) RefreshUser(ctx context.Context, login, token string) error {
 	return nil
 }
 
+// DeleteUser delete user
 func (r *PUser) DeleteUser(ctx context.Context, login string) error {
 	var id int
 	err := r.Pool.QueryRow(ctx, "update users set Deleted=true, updated=$1 where login=$2 and Deleted=false returning id",

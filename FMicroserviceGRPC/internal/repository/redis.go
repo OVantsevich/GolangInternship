@@ -1,3 +1,4 @@
+// Package repository redis
 package repository
 
 import (
@@ -10,10 +11,12 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// Redis entity
 type Redis struct {
 	Client redis.Client
 }
 
+// GetByLogin get user from cache
 func (c *Redis) GetByLogin(ctx context.Context, login string) (user *model.User, notCached bool, err error) {
 	mycache := cache.New(&cache.Options{
 		Redis: c.Client,
@@ -32,6 +35,7 @@ func (c *Redis) GetByLogin(ctx context.Context, login string) (user *model.User,
 	return
 }
 
+// CreateUser add user to cache
 func (c *Redis) CreateUser(ctx context.Context, user *model.User) error {
 	mycache := cache.New(&cache.Options{
 		Redis: c.Client,
@@ -48,6 +52,7 @@ func (c *Redis) CreateUser(ctx context.Context, user *model.User) error {
 	return nil
 }
 
+// RedisStreamInit init stream "example"
 func (c *Redis) RedisStreamInit(ctx context.Context) error {
 	_, err := c.Client.XAdd(ctx, &redis.XAddArgs{
 		Stream: "example",
@@ -64,6 +69,7 @@ func (c *Redis) RedisStreamInit(ctx context.Context) error {
 	return nil
 }
 
+// ProduceUser add user to the "example" stream
 func (c *Redis) ProduceUser(ctx context.Context, user *model.User) error {
 	mu, _ := json.Marshal(user)
 	_, err := c.Client.XAdd(ctx, &redis.XAddArgs{
@@ -78,12 +84,13 @@ func (c *Redis) ProduceUser(ctx context.Context, user *model.User) error {
 	return nil
 }
 
+// ConsumeUser read user from the "example" stream and log it
 func (c *Redis) ConsumeUser(stream string) {
 	go func() {
 		for {
 			var err error
 			var data []redis.XMessage
-			data, err = c.Client.XRangeN(context.Background(), stream, "-", "+", 10).Result()
+			data, err = c.Client.XRangeN(context.Background(), stream, "-", "+", 1).Result()
 			if err != nil {
 				logrus.Error(err)
 			}

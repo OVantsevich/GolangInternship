@@ -1,3 +1,4 @@
+// Package service package with services
 package service
 
 import (
@@ -29,6 +30,15 @@ type UserClassicRepository interface {
 	DeleteUser(ctx context.Context, login string) error
 }
 
+// Expiration time of access token
+const accessExp = time.Minute * 15
+
+// Expiration time of refresh token
+const refreshExp = time.Hour * 10
+
+// Strength of password
+const passwordStrength = 50
+
 type UserClassic struct {
 	rps    UserClassicRepository
 	cache  UserClassicCache
@@ -48,7 +58,7 @@ func NewUserServiceClassic(rps UserClassicRepository, cache UserClassicCache, st
 
 func (u *UserClassic) Signup(ctx context.Context, user *model.User) (accessToken, refreshToken string, user2 *model.User, err error) {
 
-	if err = passwordvalidator.Validate(user.Password, 50); err != nil {
+	if err = passwordvalidator.Validate(user.Password, passwordStrength); err != nil {
 		return "", "", nil, fmt.Errorf("userService - Signup - Validate: %w", err)
 	}
 
@@ -150,7 +160,7 @@ func (u *UserClassic) CreateJWT(ctx context.Context, user *model.User) (accessTo
 		user.Login,
 		user.Role,
 		jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 15)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(accessExp)),
 		},
 	}
 	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, accessClaims)
@@ -163,7 +173,7 @@ func (u *UserClassic) CreateJWT(ctx context.Context, user *model.User) (accessTo
 		user.Login,
 		user.Role,
 		jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 10)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(refreshExp)),
 		},
 	}
 	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims)

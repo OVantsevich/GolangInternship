@@ -1,3 +1,4 @@
+// Package handler package with handlers
 package handler
 
 import (

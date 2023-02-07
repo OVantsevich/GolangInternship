@@ -97,7 +97,13 @@ func (u *UserClassic) Refresh(ctx context.Context, login, userRefreshToken strin
 }
 
 func (u *UserClassic) Update(ctx context.Context, login string, user *model.User) (err error) {
-	if err = u.Struct(user); err != nil {
+	if err = u.Var(user.Name, "alpha,gt=2,lte=25"); err != nil {
+		return fmt.Errorf("userService - Update - Struct: %w", err)
+	}
+	if err = u.Var(user.Email, "email"); err != nil {
+		return fmt.Errorf("userService - Update - Struct: %w", err)
+	}
+	if err = u.Var(user.Age, "gt=0,lte=100"); err != nil {
 		return fmt.Errorf("userService - Update - Struct: %w", err)
 	}
 

@@ -160,18 +160,6 @@ var testSignUpInvalid = []pr.SignupRequest{
 		Password: `strongTestPassword`,
 	},
 	{
-		Age:      99,
-		Login:    `TestLogin`,
-		Email:    `login@test.com`,
-		Password: `strongTestPassword`,
-	},
-	{
-		Name:     `NameTest`,
-		Age:      99,
-		Email:    `login@test.com`,
-		Password: `strongTestPassword`,
-	},
-	{
 		Name:     `NameTest`,
 		Age:      99,
 		Login:    `TestLogin`,
@@ -183,6 +171,18 @@ var testSignUpInvalid = []pr.SignupRequest{
 		Age:      99,
 		Login:    `TestLogin`,
 		Email:    `0test.com`,
+		Password: `strongTestPassword`,
+	},
+	{
+		Name:     `NameTest`,
+		Age:      99,
+		Email:    `login@test.com`,
+		Password: `strongTestPassword`,
+	},
+	{
+		Age:      99,
+		Login:    `TestLogin`,
+		Email:    `login@test.com`,
 		Password: `strongTestPassword`,
 	},
 	{
@@ -370,12 +370,25 @@ func TestUserClassic_Update(t *testing.T) {
 		require.Equal(t, response.Login, user.Login)
 	}
 
-	for _, user := range testSignUpInvalid {
-		_, err = postgresPool.Exec(context.Background(), "delete from users where login=$1", user.Login)
+	for i, user := range testSignUpInvalid {
+		if i == 4 {
+			break
+		}
+		_, err = postgresPool.Exec(context.Background(), "delete from users where login=$1", testSignUpValid[0].Login)
 		require.NoError(t, err)
 
-		signupResponse, err = handlerTest.Signup(context.Background(), &user)
+		signupResponse, err = handlerTest.Signup(context.Background(), &testSignUpValid[0])
 		require.NoError(t, err)
 
+		response, err = handlerTest.Update(context.Background(), &pr.UpdateRequest{
+			User: &pr.User{
+				Email: user.Email,
+				Name:  user.Name,
+				Age:   user.Age,
+			},
+			AccessToken: signupResponse.AccessToken,
+		})
+		require.Error(t, err)
 	}
+
 }

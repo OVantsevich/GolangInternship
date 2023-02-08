@@ -60,12 +60,14 @@ func NewUserHandlerClassic(s UserClassicService) *UserClassic {
 // @Router       /signup [post]
 func (h *UserClassic) Signup(c echo.Context) (err error) {
 	user := &model.User{}
-	if err = c.Bind(user); err != nil {
+	err = c.Bind(user)
+	if err != nil {
 		logrus.Error(fmt.Errorf("userHandler - Signup - Bind: %w", err))
-		return
+		return err
 	}
 
-	if err = c.Validate(user); err != nil {
+	err = c.Validate(user)
+	if err != nil {
 		logrus.Error(fmt.Errorf("userHandler - Signup - Validate: %w", err))
 		return &echo.HTTPError{
 			Code:    http.StatusBadRequest,
@@ -75,7 +77,8 @@ func (h *UserClassic) Signup(c echo.Context) (err error) {
 
 	var accessToken, refreshToken string
 	var user2 *model.User
-	if accessToken, refreshToken, user2, err = h.s.Signup(c.Request().Context(), user); err != nil {
+	accessToken, refreshToken, user2, err = h.s.Signup(c.Request().Context(), user)
+	if err != nil {
 		logrus.Error(fmt.Errorf("userHandler - Signup - Signup: %w", err))
 		return &echo.HTTPError{
 			Code:    http.StatusInternalServerError,
@@ -104,9 +107,10 @@ func (h *UserClassic) Signup(c echo.Context) (err error) {
 // @Router       /login [post]
 func (h *UserClassic) Login(c echo.Context) (err error) {
 	user := &model.User{}
-	if err = c.Bind(user); err != nil {
+	err = c.Bind(user)
+	if err != nil {
 		logrus.Error(fmt.Errorf("userHandler - Login - Bind: %w", err))
-		return
+		return err
 	}
 
 	var accessToken, refreshToken string
@@ -137,7 +141,8 @@ func (h *UserClassic) Refresh(c echo.Context) (err error) {
 	token, login := tokenFromContext(c)
 
 	var accessToken, refreshToken string
-	if accessToken, refreshToken, err = h.s.Refresh(c.Request().Context(), login, token); err != nil {
+	accessToken, refreshToken, err = h.s.Refresh(c.Request().Context(), login, token)
+	if err != nil {
 		logrus.Error(fmt.Errorf("userHandler - Refresh - Refresh: %w", err))
 		return &echo.HTTPError{
 			Code:    http.StatusInternalServerError,
@@ -164,13 +169,15 @@ func (h *UserClassic) Refresh(c echo.Context) (err error) {
 // @Security Bearer
 func (h *UserClassic) Update(c echo.Context) (err error) {
 	user := &model.User{}
-	if err = c.Bind(user); err != nil {
+	err = c.Bind(user)
+	if err != nil {
 		logrus.Error(fmt.Errorf("userHandler - Update - Bind: %w", err))
-		return
+		return err
 	}
 	_, login := tokenFromContext(c)
 
-	if err = c.Validate(user); err != nil {
+	err = c.Validate(user)
+	if err != nil {
 		logrus.Error(fmt.Errorf("userHandler - Update - Validate: %w", err))
 		return &echo.HTTPError{
 			Code:    http.StatusBadRequest,
@@ -178,7 +185,8 @@ func (h *UserClassic) Update(c echo.Context) (err error) {
 		}
 	}
 
-	if err = h.s.Update(c.Request().Context(), login, user); err != nil {
+	err = h.s.Update(c.Request().Context(), login, user)
+	if err != nil {
 		logrus.Error(fmt.Errorf("userHandler - Update - Update: %w", err))
 		return &echo.HTTPError{
 			Code:    http.StatusInternalServerError,
@@ -201,7 +209,8 @@ func (h *UserClassic) Update(c echo.Context) (err error) {
 func (h *UserClassic) Delete(c echo.Context) (err error) {
 	_, login := tokenFromContext(c)
 
-	if err = h.s.Delete(c.Request().Context(), login); err != nil {
+	err = h.s.Delete(c.Request().Context(), login)
+	if err != nil {
 		logrus.Error(fmt.Errorf("userHandler - Delete - Delete: %w", err))
 		return &echo.HTTPError{
 			Code:    http.StatusInternalServerError,
@@ -228,7 +237,8 @@ func (h *UserClassic) UserByLogin(c echo.Context) (err error) {
 	login := c.Request().Header.Get("login")
 
 	var user *model.User
-	if user, err = h.s.GetByLogin(c.Request().Context(), login); err != nil {
+	user, err = h.s.GetByLogin(c.Request().Context(), login)
+	if err != nil {
 		logrus.Error(fmt.Errorf("userHandler - UserByLogin - GetLastN: %w", err))
 		return &echo.HTTPError{
 			Code:    http.StatusInternalServerError,

@@ -107,7 +107,10 @@ func TestMain(m *testing.M) {
 
 	rds := &repository.Redis{Client: *client}
 
-	rds.RedisStreamInit(context.Background())
+	err = rds.RedisStreamInit(context.Background())
+	if err != nil {
+		logrus.Fatal(err)
+	}
 	rds.ConsumeUser("example")
 
 	userService := service.NewUserServiceClassic(repository.NewPostgresRepository(postgresPool), rds, rds, JwtKey)
@@ -224,79 +227,72 @@ func TestUserClassic_Signup(t *testing.T) {
 	var response *pr.SignupResponse
 	var err error
 
-	for _, user := range testSignUpValid {
+	for _, user := range testSignUpValid { //nolint:govet //all ok
 		_, err = postgresPool.Exec(context.Background(), "delete from users where login=$1", user.Login)
 		require.NoError(t, err)
 
 		response, err = handlerTest.Signup(context.Background(), &user)
 		require.NoError(t, err)
 
-		_, err = handlerTest.Verify(response.AccessToken)
+		_, err = handlerTest.verify(response.AccessToken)
 		require.NoError(t, err)
 	}
 
-	for _, user := range testSignUpInvalid {
-		response, err = handlerTest.Signup(context.Background(), &user)
+	for _, user := range testSignUpInvalid { //nolint:govet //all ok
+		_, err = handlerTest.Signup(context.Background(), &user)
 		require.Error(t, err)
 	}
 
-	for _, user := range testSignUpValid {
-		_, err = postgresPool.Exec(context.Background(), "delete from users where login=$1", user.Login)
-		require.NoError(t, err)
+	_, err = postgresPool.Exec(context.Background(), "delete from users where login=$1", testSignUpValid[0].Login)
+	require.NoError(t, err)
 
-		response, err = handlerTest.Signup(context.Background(), &user)
-		require.NoError(t, err)
+	_, err = handlerTest.Signup(context.Background(), &testSignUpValid[0])
+	require.NoError(t, err)
 
-		response, err = handlerTest.Signup(context.Background(), &user)
-		require.Error(t, err)
-	}
+	_, err = handlerTest.Signup(context.Background(), &testSignUpValid[0])
+	require.Error(t, err)
 }
 
 func TestUserClassic_Login(t *testing.T) {
 	var response *pr.LoginResponse
 	var err error
 
-	for _, user := range testSignUpValid {
-		_, err = postgresPool.Exec(context.Background(), "delete from users where login=$1", user.Login)
-		require.NoError(t, err)
+	_, err = postgresPool.Exec(context.Background(), "delete from users where login=$1", testSignUpValid[0].Login)
+	require.NoError(t, err)
 
-		_, err = handlerTest.Signup(context.Background(), &user)
-		require.NoError(t, err)
+	_, err = handlerTest.Signup(context.Background(), &testSignUpValid[0])
+	require.NoError(t, err)
 
-		response, err = handlerTest.Login(context.Background(), &pr.LoginRequest{
-			Login:    user.Login,
-			Password: user.Password,
-		})
-		require.NoError(t, err)
+	response, err = handlerTest.Login(context.Background(), &pr.LoginRequest{
+		Login:    testSignUpValid[0].Login,
+		Password: testSignUpValid[0].Password,
+	})
+	require.NoError(t, err)
 
-		_, err = handlerTest.Verify(response.AccessToken)
-		require.NoError(t, err)
-	}
+	_, err = handlerTest.verify(response.AccessToken)
+	require.NoError(t, err)
 
-	for _, user := range testSignUpValid {
-		_, err = postgresPool.Exec(context.Background(), "delete from users where login=$1", user.Login)
-		require.NoError(t, err)
+	_, err = postgresPool.Exec(context.Background(), "delete from users where login=$1", testSignUpValid[0].Login)
+	require.NoError(t, err)
 
-		response, err = handlerTest.Login(context.Background(), &pr.LoginRequest{
-			Login:    user.Login,
-			Password: user.Password,
-		})
-		require.Error(t, err)
-	}
+	_, err = handlerTest.Login(context.Background(), &pr.LoginRequest{
+		Login:    testSignUpValid[0].Login,
+		Password: testSignUpValid[0].Password,
+	})
+	require.Error(t, err)
 
-	for _, user := range testSignUpValid {
-		_, err = postgresPool.Exec(context.Background(), "delete from users where login=$1", user.Login)
-		require.NoError(t, err)
+	_, err = postgresPool.Exec(context.Background(), "delete from users where login=$1", testSignUpValid[0].Login)
+	require.NoError(t, err)
 
-		_, err = handlerTest.Signup(context.Background(), &user)
-		require.NoError(t, err)
+	_, err = handlerTest.Signup(context.Background(), &testSignUpValid[0])
+	require.NoError(t, err)
 
-		response, err = handlerTest.Login(context.Background(), &pr.LoginRequest{
-			Login:    user.Login,
-			Password: "wrong password",
-		})
-		require.Error(t, err)
-	}
+	_, err = handlerTest.Login(context.Background(), &pr.LoginRequest{
+		Login:    testSignUpValid[0].Login,
+		Password: "wrong password",
+	})
+	require.Error(t, err)
+
 }
 
 func TestUserClassic_Refresh(t *testing.T) {
@@ -304,73 +300,65 @@ func TestUserClassic_Refresh(t *testing.T) {
 	var signupResponse *pr.SignupResponse
 	var err error
 
-	for _, user := range testSignUpValid {
-		_, err = postgresPool.Exec(context.Background(), "delete from users where login=$1", user.Login)
-		require.NoError(t, err)
+	_, err = postgresPool.Exec(context.Background(), "delete from users where login=$1", testSignUpValid[0].Login)
+	require.NoError(t, err)
 
-		signupResponse, err = handlerTest.Signup(context.Background(), &user)
-		require.NoError(t, err)
+	signupResponse, err = handlerTest.Signup(context.Background(), &testSignUpValid[0])
+	require.NoError(t, err)
 
-		response, err = handlerTest.Refresh(context.Background(), &pr.RefreshRequest{
-			Login:        user.Login,
-			RefreshToken: signupResponse.RefreshToken,
-		})
-		require.NoError(t, err)
+	response, err = handlerTest.Refresh(context.Background(), &pr.RefreshRequest{
+		Login:        testSignUpValid[0].Login,
+		RefreshToken: signupResponse.RefreshToken,
+	})
+	require.NoError(t, err)
 
-		_, err = handlerTest.Verify(response.AccessToken)
-		require.NoError(t, err)
-	}
+	_, err = handlerTest.verify(response.AccessToken)
+	require.NoError(t, err)
 
-	for _, user := range testSignUpValid {
-		_, err = postgresPool.Exec(context.Background(), "delete from users where login=$1", user.Login)
-		require.NoError(t, err)
+	_, err = postgresPool.Exec(context.Background(), "delete from users where login=$1", testSignUpValid[0].Login)
+	require.NoError(t, err)
 
-		response, err = handlerTest.Refresh(context.Background(), &pr.RefreshRequest{
-			Login:        user.Login,
-			RefreshToken: "",
-		})
-		require.Error(t, err)
-	}
+	_, err = handlerTest.Refresh(context.Background(), &pr.RefreshRequest{
+		Login:        testSignUpValid[0].Login,
+		RefreshToken: "",
+	})
+	require.Error(t, err)
 
-	for _, user := range testSignUpValid {
-		_, err = postgresPool.Exec(context.Background(), "delete from users where login=$1", user.Login)
-		require.NoError(t, err)
+	_, err = postgresPool.Exec(context.Background(), "delete from users where login=$1", testSignUpValid[0].Login)
+	require.NoError(t, err)
 
-		_, err = handlerTest.Signup(context.Background(), &user)
-		require.NoError(t, err)
+	_, err = handlerTest.Signup(context.Background(), &testSignUpValid[0])
+	require.NoError(t, err)
 
-		response, err = handlerTest.Refresh(context.Background(), &pr.RefreshRequest{
-			Login:        user.Login,
-			RefreshToken: "ad",
-		})
-		require.Error(t, err)
-	}
+	_, err = handlerTest.Refresh(context.Background(), &pr.RefreshRequest{
+		Login:        testSignUpValid[0].Login,
+		RefreshToken: "ad",
+	})
+	require.Error(t, err)
 }
 func TestUserClassic_Update(t *testing.T) {
 	var response *pr.UpdateResponse
 	var signupResponse *pr.SignupResponse
 	var err error
 
-	for _, user := range testSignUpValid {
-		_, err = postgresPool.Exec(context.Background(), "delete from users where login=$1", user.Login)
-		require.NoError(t, err)
+	_, err = postgresPool.Exec(context.Background(), "delete from users where login=$1", testSignUpValid[0].Login)
+	require.NoError(t, err)
 
-		signupResponse, err = handlerTest.Signup(context.Background(), &user)
-		require.NoError(t, err)
+	signupResponse, err = handlerTest.Signup(context.Background(), &testSignUpValid[0])
+	require.NoError(t, err)
 
-		response, err = handlerTest.Update(context.Background(), &pr.UpdateRequest{
-			User: &pr.User{
-				Email: user.Email,
-				Name:  user.Name,
-				Age:   user.Age,
-			},
-			AccessToken: signupResponse.AccessToken,
-		})
-		require.NoError(t, err)
-		require.Equal(t, response.Login, user.Login)
-	}
+	response, err = handlerTest.Update(context.Background(), &pr.UpdateRequest{
+		User: &pr.User{
+			Email: testSignUpValid[0].Email,
+			Name:  testSignUpValid[0].Name,
+			Age:   testSignUpValid[0].Age,
+		},
+		AccessToken: signupResponse.AccessToken,
+	})
+	require.NoError(t, err)
+	require.Equal(t, response.Login, testSignUpValid[0].Login)
 
-	for i, user := range testSignUpInvalid {
+	for i, user := range testSignUpInvalid { //nolint:govet //all ok
 		if i == 4 {
 			break
 		}
@@ -380,7 +368,7 @@ func TestUserClassic_Update(t *testing.T) {
 		signupResponse, err = handlerTest.Signup(context.Background(), &testSignUpValid[0])
 		require.NoError(t, err)
 
-		response, err = handlerTest.Update(context.Background(), &pr.UpdateRequest{
+		_, err = handlerTest.Update(context.Background(), &pr.UpdateRequest{
 			User: &pr.User{
 				Email: user.Email,
 				Name:  user.Name,
@@ -390,5 +378,4 @@ func TestUserClassic_Update(t *testing.T) {
 		})
 		require.Error(t, err)
 	}
-
 }

@@ -2,10 +2,12 @@
 package repository
 
 import (
-	"GolangInternship/FMicroserviceGRPC/internal/model"
 	"context"
 	"encoding/json"
 	"fmt"
+
+	"GolangInternship/FMicroserviceGRPC/internal/model"
+
 	"github.com/go-redis/cache/v8"
 	"github.com/go-redis/redis/v8"
 	"github.com/sirupsen/logrus"

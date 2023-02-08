@@ -35,13 +35,12 @@ func main() {
 		logrus.Fatal("failed to write messages:", err)
 	}
 
-	ch := make(chan int, 1)
-	go consumer(ch)
-
 	if err := conn.Close(); err != nil {
 		logrus.Fatal("failed to close writer:", err)
 	}
 
+	ch := make(chan int, 1)
+	go consumer(ch)
 	<-ch
 }
 

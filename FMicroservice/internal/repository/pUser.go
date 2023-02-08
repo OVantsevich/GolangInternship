@@ -40,8 +40,8 @@ func (r *PUser) GetUserByLogin(ctx context.Context, login string) (*model.User, 
 	user := model.User{}
 	err := r.Pool.QueryRow(ctx, `select u.name, u.age, u.login, u.password, u.token,u.email, r.name
 									from users u
-											 left join l_role_user l on u.id = l.user_id
-											 left join roles r on l.role_id = r.id
+											 join l_role_user l on u.id = l.user_id
+											 join roles r on l.role_id = r.id
 									where u.login = $1 and u.deleted=false`, login).Scan(
 		&user.Name, &user.Age, &user.Login, &user.Password, &user.Token, &user.Email, &user.Role)
 	if err != nil {

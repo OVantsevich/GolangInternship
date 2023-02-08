@@ -15,9 +15,28 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"google.golang.org/grpc"
+	"log"
 	"net"
 )
 
+func (interceptor *AuthInterceptor) Stream() grpc.StreamServerInterceptor {
+	return func(
+		ctx context.Context,
+		desc *grpc.StreamDesc,
+		cc *grpc.ClientConn,
+		method string,
+		streamer grpc.Streamer,
+		opts ...grpc.CallOption,
+	) (grpc.ClientStream, error) {
+		log.Printf("--> stream interceptor: %s", method)
+
+		if interceptor.authMethods[method] {
+			return streamer(interceptor.attachToken(ctx), desc, cc, method, opts...)
+		}
+
+		return streamer(ctx, desc, cc, method, opts...)
+	}
+}
 func main() {
 	listen, err := net.Listen("tcp", "localhost:12344")
 	if err != nil {
@@ -43,12 +62,15 @@ func main() {
 
 	rds := &repository.Redis{Client: *client}
 
-	rds.RedisStreamInit(context.Background())
+	err = rds.RedisStreamInit(context.Background())
+	if err != nil {
+		logrus.Fatal(err)
+	}
 	rds.ConsumeUser("example")
 
 	userService := service.NewUserServiceClassic(repos, rds, rds, cfg.JwtKey)
 
-	ns := grpc.NewServer()
+	ns := grpc.NewServer(grpc.StreamInterceptor())
 	server := handler.NewUserHandlerClassic(userService, cfg.JwtKey)
 	pr.RegisterUserServiceServer(ns, server)
 

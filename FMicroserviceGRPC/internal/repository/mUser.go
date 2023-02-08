@@ -2,14 +2,16 @@
 package repository
 
 import (
-	"GolangInternship/FMicroserviceGRPC/internal/model"
 	"context"
 	"fmt"
+	"time"
+
+	"GolangInternship/FMicroserviceGRPC/internal/model"
+
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
-	"time"
 )
 
 // MUser mongo entity
@@ -83,6 +85,8 @@ func (r *MUser) UpdateUser(ctx context.Context, login string, user *model.User) 
 }
 
 // RefreshUser refresh user
+//
+// nolint:dupl //just because
 func (r *MUser) RefreshUser(ctx context.Context, login, token string) error {
 	collection := r.Client.Database("userService").Collection("users")
 
@@ -101,6 +105,8 @@ func (r *MUser) RefreshUser(ctx context.Context, login, token string) error {
 }
 
 // DeleteUser delete user
+//
+// nolint:dupl //just because
 func (r *MUser) DeleteUser(ctx context.Context, login string) error {
 	collection := r.Client.Database("userService").Collection("users")
 

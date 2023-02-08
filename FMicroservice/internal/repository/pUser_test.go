@@ -88,8 +88,6 @@ func TestMain(m *testing.M) {
 	}); err != nil {
 		logrus.Fatalf("Could not connect to database: %s", err)
 	}
-	logrus.Fatal(db.Exec(ctx, "insert into roles (name) values ('admin')"))
-	logrus.Fatal(db.Exec(ctx, "insert into roles (name) values ('user')"))
 	code := m.Run()
 
 	if err := pool.Purge(resource); err != nil {

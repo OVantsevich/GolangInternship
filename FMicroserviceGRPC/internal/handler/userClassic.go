@@ -10,6 +10,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// UserClassicService service interface for user handler
+//
 //go:generate mockery --name=UserClassicService --case=underscore --output=./mocks
 type UserClassicService interface {
 	Signup(ctx context.Context, user *model.User) (string, string, *model.User, error)
@@ -21,26 +23,20 @@ type UserClassicService interface {
 	GetByLogin(ctx context.Context, login string) (*model.User, error)
 }
 
+// UserClassic handler
 type UserClassic struct {
 	pr.UnimplementedUserServiceServer
 	s      UserClassicService
 	jwtKey string
 }
 
-type TokenResponse struct {
-	AccessToken  string `json:"access" example:"eyJhbGciOiJIUzI1NiIsInR5cC6IkpXVCJ9.eyJsb2dpbiI6InRc3QxIiwiZXhwIjoxNjc1MDgwNjE3fQ.OIt5MGzpbo1vZT5aNRvPwZCpU_tx-lisT2W2eyh78"`
-	RefreshToken string `json:"refresh" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJsb2dpiI6InRlc3QxIiwiZXhwIjoxNjc1MTE1NzE3fQ.UJ0HF6D4Hb7cLdDfQxg3Byzvb8hWEXwK2RaNWDH54"`
-}
-
-type SignupResponse struct {
-	*model.User
-	*TokenResponse
-}
+// NewUserHandlerClassic new user handler
 
 func NewUserHandlerClassic(s UserClassicService, key string) *UserClassic {
 	return &UserClassic{s: s, jwtKey: key}
 }
 
+// Signup handler signup
 func (h *UserClassic) Signup(ctx context.Context, request *pr.SignupRequest) (response *pr.SignupResponse, err error) {
 	user := &model.User{
 		Login:    request.Login,
@@ -52,7 +48,8 @@ func (h *UserClassic) Signup(ctx context.Context, request *pr.SignupRequest) (re
 
 	var userResponse *model.User
 	response = &pr.SignupResponse{}
-	if response.AccessToken, response.RefreshToken, userResponse, err = h.s.Signup(ctx, user); err != nil {
+	response.AccessToken, response.RefreshToken, userResponse, err = h.s.Signup(ctx, user)
+	if err != nil {
 		err = fmt.Errorf("userHandler - Signup - Signup: %w", err)
 		logrus.Error(err)
 		return
@@ -69,9 +66,11 @@ func (h *UserClassic) Signup(ctx context.Context, request *pr.SignupRequest) (re
 	return
 }
 
+// Login handler login
 func (h *UserClassic) Login(ctx context.Context, request *pr.LoginRequest) (response *pr.LoginResponse, err error) {
 	response = &pr.LoginResponse{}
-	if response.AccessToken, response.RefreshToken, err = h.s.Login(ctx, request.Login, request.Password); err != nil {
+	response.AccessToken, response.RefreshToken, err = h.s.Login(ctx, request.Login, request.Password)
+	if err != nil {
 		err = fmt.Errorf("userHandler - Login - Login: %w", err)
 		logrus.Error(err)
 		return
@@ -80,9 +79,11 @@ func (h *UserClassic) Login(ctx context.Context, request *pr.LoginRequest) (resp
 	return
 }
 
+// Refresh handler refresh
 func (h *UserClassic) Refresh(ctx context.Context, request *pr.RefreshRequest) (response *pr.RefreshResponse, err error) {
 	response = &pr.RefreshResponse{}
-	if response.AccessToken, response.RefreshToken, err = h.s.Refresh(ctx, request.Login, request.RefreshToken); err != nil {
+	response.AccessToken, response.RefreshToken, err = h.s.Refresh(ctx, request.Login, request.RefreshToken)
+	if err != nil {
 		err = fmt.Errorf("userHandler - Refresh - Refresh: %w", err)
 		logrus.Error(err)
 		return
@@ -91,11 +92,12 @@ func (h *UserClassic) Refresh(ctx context.Context, request *pr.RefreshRequest) (
 	return
 }
 
+// Update handler update
 func (h *UserClassic) Update(ctx context.Context, request *pr.UpdateRequest) (response *pr.UpdateResponse, err error) {
 	var claims *service.CustomClaims
-	claims, err = h.Verify(request.AccessToken)
+	claims, err = h.verify(request.AccessToken)
 	if err != nil {
-		err = fmt.Errorf("userHandler - Update - Verify: %w", err)
+		err = fmt.Errorf("userHandler - Update - verify: %w", err)
 		logrus.Error(err)
 		return
 	}
@@ -108,7 +110,8 @@ func (h *UserClassic) Update(ctx context.Context, request *pr.UpdateRequest) (re
 		Age:      int(request.User.Age),
 	}
 	response = &pr.UpdateResponse{}
-	if err = h.s.Update(ctx, claims.Login, user); err != nil {
+	err = h.s.Update(ctx, claims.Login, user)
+	if err != nil {
 		err = fmt.Errorf("userHandler - Update - Update: %w", err)
 		logrus.Error(err)
 		return
@@ -118,17 +121,19 @@ func (h *UserClassic) Update(ctx context.Context, request *pr.UpdateRequest) (re
 	return
 }
 
+// Delete handler delete
 func (h *UserClassic) Delete(ctx context.Context, request *pr.DeleteRequest) (response *pr.DeleteResponse, err error) {
 	var claims *service.CustomClaims
-	claims, err = h.Verify(request.AccessToken)
+	claims, err = h.verify(request.AccessToken)
 	if err != nil {
-		err = fmt.Errorf("userHandler - Delete - Verify: %w", err)
+		err = fmt.Errorf("userHandler - Delete - verify: %w", err)
 		logrus.Error(err)
 		return
 	}
 
 	response = &pr.DeleteResponse{}
-	if err = h.s.Delete(ctx, claims.Login); err != nil {
+	err = h.s.Delete(ctx, claims.Login)
+	if err != nil {
 		err = fmt.Errorf("userHandler - Delete - Delete: %w", err)
 		logrus.Error(err)
 		return
@@ -138,11 +143,12 @@ func (h *UserClassic) Delete(ctx context.Context, request *pr.DeleteRequest) (re
 	return
 }
 
+// UserByLogin handler user by login
 func (h *UserClassic) UserByLogin(ctx context.Context, request *pr.UserByLoginRequest) (response *pr.UserByLoginResponse, err error) {
 	var claims *service.CustomClaims
-	claims, err = h.Verify(request.AccessToken)
+	claims, err = h.verify(request.AccessToken)
 	if err != nil {
-		err = fmt.Errorf("userHandler - UserByLogin - Verify: %w", err)
+		err = fmt.Errorf("userHandler - UserByLogin - verify: %w", err)
 		logrus.Error(err)
 		return
 	}
@@ -154,7 +160,8 @@ func (h *UserClassic) UserByLogin(ctx context.Context, request *pr.UserByLoginRe
 
 	response = &pr.UserByLoginResponse{}
 	var user *model.User
-	if user, err = h.s.GetByLogin(ctx, claims.Login); err != nil {
+	user, err = h.s.GetByLogin(ctx, claims.Login)
+	if err != nil {
 		err = fmt.Errorf("userHandler - UserByLogin - GetByLogin: %w", err)
 		logrus.Error(err)
 		return
@@ -171,7 +178,7 @@ func (h *UserClassic) UserByLogin(ctx context.Context, request *pr.UserByLoginRe
 	return
 }
 
-func (h *UserClassic) Verify(token string) (claims *service.CustomClaims, err error) {
+func (h *UserClassic) verify(token string) (claims *service.CustomClaims, err error) {
 	claims = &service.CustomClaims{}
 
 	_, err = jwt.ParseWithClaims(

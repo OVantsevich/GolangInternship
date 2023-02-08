@@ -1,21 +1,23 @@
 package handler
 
 import (
-	"GolangInternship/FMicroservice/internal/handler/mocks"
-	"GolangInternship/FMicroservice/internal/model"
-	"GolangInternship/FMicroservice/internal/service"
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+	"time"
+
+	"GolangInternship/FMicroservice/internal/handler/mocks"
+	"GolangInternship/FMicroservice/internal/model"
+	"GolangInternship/FMicroservice/internal/service"
+
 	"github.com/go-playground/validator/v10"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"net/http"
-	"net/http/httptest"
-	"testing"
-	"time"
 )
 
 type CustomValidator struct {
@@ -97,11 +99,6 @@ func TestUser_Signup(t *testing.T) {
 
 		require.NoError(t, h.Signup(c))
 		require.Equal(t, http.StatusCreated, rec.Code)
-		//check, _ := json.Marshal(SignupResponse{&user, &TokenResponse{
-		//	AccessToken:  "",
-		//	RefreshToken: "",
-		//}})
-		//require.Equal(t, check, rec.Body.Bytes())
 	}
 
 	for _, user := range testNoValidData {

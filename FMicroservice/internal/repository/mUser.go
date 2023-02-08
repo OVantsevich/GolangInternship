@@ -85,6 +85,8 @@ func (r *MUser) UpdateUser(ctx context.Context, login string, user *model.User) 
 }
 
 // RefreshUser refresh user
+//
+// nolint:dupl //just because
 func (r *MUser) RefreshUser(ctx context.Context, login, token string) error {
 	collection := r.Client.Database("userService").Collection("users")
 
@@ -103,6 +105,8 @@ func (r *MUser) RefreshUser(ctx context.Context, login, token string) error {
 }
 
 // DeleteUser delete user
+//
+// nolint:dupl //just because
 func (r *MUser) DeleteUser(ctx context.Context, login string) error {
 	collection := r.Client.Database("userService").Collection("users")
 

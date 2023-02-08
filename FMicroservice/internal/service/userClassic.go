@@ -2,25 +2,33 @@
 package service
 
 import (
-	"GolangInternship/FMicroservice/internal/model"
 	"context"
 	"fmt"
+	"time"
+
+	"GolangInternship/FMicroservice/internal/model"
+
 	"github.com/golang-jwt/jwt/v4"
 	passwordvalidator "github.com/wagslane/go-password-validator"
-	"time"
 )
 
+// UserClassicStream stream interface for user service
+//
 //go:generate mockery --name=UserClassicStream --case=underscore --output=./mocks
 type UserClassicStream interface {
 	ProduceUser(ctx context.Context, user *model.User) error
 }
 
+// UserClassicCache cache interface for user service
+//
 //go:generate mockery --name=UserClassicCache --case=underscore --output=./mocks
 type UserClassicCache interface {
 	GetByLogin(ctx context.Context, login string) (*model.User, bool, error)
 	CreateUser(ctx context.Context, user *model.User) error
 }
 
+// UserClassicRepository repository interface for user service
+//
 //go:generate mockery --name=UserClassicRepository --case=underscore --output=./mocks
 type UserClassicRepository interface {
 	CreateUser(ctx context.Context, user *model.User) (*model.User, error)
@@ -39,6 +47,7 @@ const refreshExp = time.Hour * 10
 // Strength of password
 const passwordStrength = 50
 
+// UserClassic user service
 type UserClassic struct {
 	rps    UserClassicRepository
 	cache  UserClassicCache
@@ -46,18 +55,20 @@ type UserClassic struct {
 	jwtKey []byte
 }
 
+// CustomClaims claims with login and role
 type CustomClaims struct {
 	Login string `json:"login"`
 	Role  string `json:"role"`
 	jwt.RegisteredClaims
 }
 
+// NewUserServiceClassic new user service
 func NewUserServiceClassic(rps UserClassicRepository, cache UserClassicCache, stream UserClassicStream, key string) *UserClassic {
 	return &UserClassic{rps: rps, cache: cache, stream: stream, jwtKey: []byte(key)}
 }
 
+// Signup service signup
 func (u *UserClassic) Signup(ctx context.Context, user *model.User) (accessToken, refreshToken string, user2 *model.User, err error) {
-
 	if err = passwordvalidator.Validate(user.Password, passwordStrength); err != nil {
 		return "", "", nil, fmt.Errorf("userService - Signup - Validate: %w", err)
 	}
@@ -67,9 +78,9 @@ func (u *UserClassic) Signup(ctx context.Context, user *model.User) (accessToken
 	}
 
 	user.Role = "user"
-	accessToken, refreshToken, err = u.CreateJWT(ctx, user)
+	accessToken, refreshToken, err = u.createJWT(ctx, user)
 	if err != nil {
-		return "", "", nil, fmt.Errorf("userService - Signup - CreateJWT: %w", err)
+		return "", "", nil, fmt.Errorf("userService - Signup - createJWT: %w", err)
 	}
 
 	err = u.stream.ProduceUser(ctx, user)
@@ -80,6 +91,9 @@ func (u *UserClassic) Signup(ctx context.Context, user *model.User) (accessToken
 	return
 }
 
+// Login service login
+//
+//nolint:dupl //just because
 func (u *UserClassic) Login(ctx context.Context, login, password string) (accessToken, refreshToken string, err error) {
 	var user *model.User
 
@@ -91,14 +105,17 @@ func (u *UserClassic) Login(ctx context.Context, login, password string) (access
 		return "", "", fmt.Errorf("userService - Login - Password invalid: %w", err)
 	}
 
-	accessToken, refreshToken, err = u.CreateJWT(ctx, user)
+	accessToken, refreshToken, err = u.createJWT(ctx, user)
 	if err != nil {
-		return "", "", fmt.Errorf("userService - Login - CreateJWT: %w", err)
+		return "", "", fmt.Errorf("userService - Login - createJWT: %w", err)
 	}
 
 	return
 }
 
+// Refresh service refresh
+//
+//nolint:dupl //just because
 func (u *UserClassic) Refresh(ctx context.Context, login, userRefreshToken string) (accessToken, refreshToken string, err error) {
 	var user *model.User
 
@@ -110,14 +127,15 @@ func (u *UserClassic) Refresh(ctx context.Context, login, userRefreshToken strin
 		return "", "", fmt.Errorf("userService - Refresh - Token invalid: %w", err)
 	}
 
-	accessToken, refreshToken, err = u.CreateJWT(ctx, user)
+	accessToken, refreshToken, err = u.createJWT(ctx, user)
 	if err != nil {
-		return "", "", fmt.Errorf("userService - Refresh - CreateJWT: %w", err)
+		return "", "", fmt.Errorf("userService - Refresh - createJWT: %w", err)
 	}
 
 	return
 }
 
+// Update service update
 func (u *UserClassic) Update(ctx context.Context, login string, user *model.User) (err error) {
 	if err = u.rps.UpdateUser(ctx, login, user); err != nil {
 		return fmt.Errorf("userService - Update - UpdateUser: %w", err)
@@ -126,6 +144,7 @@ func (u *UserClassic) Update(ctx context.Context, login string, user *model.User
 	return
 }
 
+// Delete service delete
 func (u *UserClassic) Delete(ctx context.Context, login string) (err error) {
 	if err = u.rps.DeleteUser(ctx, login); err != nil {
 		return fmt.Errorf("userService - Delete - DeleteUser: %w", err)
@@ -134,6 +153,7 @@ func (u *UserClassic) Delete(ctx context.Context, login string) (err error) {
 	return
 }
 
+// GetByLogin service get by login
 func (u *UserClassic) GetByLogin(ctx context.Context, login string) (user *model.User, err error) {
 	var notCached bool
 	user, notCached, err = u.cache.GetByLogin(ctx, login)
@@ -155,7 +175,7 @@ func (u *UserClassic) GetByLogin(ctx context.Context, login string) (user *model
 	return
 }
 
-func (u *UserClassic) CreateJWT(ctx context.Context, user *model.User) (accessTokenStr, refreshTokenStr string, err error) {
+func (u *UserClassic) createJWT(ctx context.Context, user *model.User) (accessTokenStr, refreshTokenStr string, err error) {
 	accessClaims := &CustomClaims{
 		user.Login,
 		user.Role,
@@ -166,7 +186,7 @@ func (u *UserClassic) CreateJWT(ctx context.Context, user *model.User) (accessTo
 	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, accessClaims)
 	accessTokenStr, err = accessToken.SignedString(u.jwtKey)
 	if err != nil {
-		return "", "", fmt.Errorf("userService - CreateJWT - SignedString: %w", err)
+		return "", "", fmt.Errorf("userService - createJWT - SignedString: %w", err)
 	}
 
 	refreshClaims := &CustomClaims{
@@ -179,12 +199,12 @@ func (u *UserClassic) CreateJWT(ctx context.Context, user *model.User) (accessTo
 	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims)
 	refreshTokenStr, err = refreshToken.SignedString(u.jwtKey)
 	if err != nil {
-		return "", "", fmt.Errorf("userService - CreateJWT - SignedString: %w", err)
+		return "", "", fmt.Errorf("userService - createJWT - SignedString: %w", err)
 	}
 
 	err = u.rps.RefreshUser(ctx, user.Login, refreshTokenStr)
 	if err != nil {
-		return "", "", fmt.Errorf("userService - CreateJWT - RefreshUser: %w", err)
+		return "", "", fmt.Errorf("userService - createJWT - RefreshUser: %w", err)
 	}
-	return
+	return accessTokenStr, refreshTokenStr, err
 }

@@ -60,7 +60,6 @@ func TestMUser_CreateUser(t *testing.T) {
 	}
 
 	// Already existing data
-
 	for _, u := range mTestValidData {
 		_, err = mrps.CreateUser(ctx, u.User)
 		require.NoError(t, err, "create error")
@@ -99,8 +98,7 @@ func TestMUser_GetUserByLogin(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	//Non-existent data
-
+	// Non-existent data
 	for _, u := range mTestValidData {
 		_, err = mrps.Client.Database("userService").Collection("users").DeleteOne(
 			ctx, bson.D{primitive.E{Key: "user.login", Value: u.Login}})
@@ -139,8 +137,7 @@ func TestMUser_UpdateUser(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	//Non-existent data
-
+	// Non-existent data
 	for _, u := range mTestValidData {
 		_, err = mrps.Client.Database("userService").Collection("users").DeleteOne(
 			ctx, bson.D{primitive.E{Key: "user.login", Value: u.Login}})
@@ -179,8 +176,7 @@ func TestMUser_RefreshUser(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	//Non-existent data
-
+	// Non-existent data
 	for _, u := range mTestValidData {
 		_, err = mrps.Client.Database("userService").Collection("users").DeleteOne(
 			ctx, bson.D{primitive.E{Key: "user.login", Value: u.Login}})
@@ -217,8 +213,7 @@ func TestMUser_DeleteUser(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	//Non-existent data
-
+	// Non-existent data
 	for _, u := range mTestValidData {
 		_, err = mrps.Client.Database("userService").Collection("users").DeleteOne(
 			ctx, bson.D{primitive.E{Key: "user.login", Value: u.Login}})

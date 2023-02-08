@@ -2,13 +2,18 @@
 package main
 
 import (
+	"context"
+	"fmt"
+	"io"
+	"net/http"
+	"os"
+
 	_ "GolangInternship/FMicroservice/docs"
 	"GolangInternship/FMicroservice/internal/config"
 	"GolangInternship/FMicroservice/internal/handler"
 	"GolangInternship/FMicroservice/internal/repository"
 	"GolangInternship/FMicroservice/internal/service"
-	"context"
-	"fmt"
+
 	"github.com/go-playground/validator/v10"
 	"github.com/go-redis/redis/v8"
 	"github.com/golang-jwt/jwt/v4"
@@ -19,15 +24,22 @@ import (
 	echoSwagger "github.com/swaggo/echo-swagger"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"io"
-	"net/http"
-	"os"
 )
 
+const (
+	// postgresDB db name for selected database
+	postgresDB = "postgres"
+
+	// mongoDB db name for selected database
+	mongoDB = "mongo"
+)
+
+// CustomValidator echo validator
 type CustomValidator struct {
 	validator *validator.Validate
 }
 
+// Validate echo method
 func (cv *CustomValidator) Validate(i interface{}) error {
 	if err := cv.validator.Struct(i); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
@@ -48,13 +60,13 @@ func upload(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	defer src.Close()
+	defer logrus.Error(src.Close())
 
 	dst, err := os.Create(file.Filename)
 	if err != nil {
 		return err
 	}
-	defer dst.Close()
+	defer logrus.Error(dst.Close())
 
 	if _, err = io.Copy(dst, src); err != nil {
 		return err
@@ -106,20 +118,20 @@ func main() {
 	}))
 
 	var repos service.UserClassicRepository
-	repos, err = DBConnection(cfg)
+	repos, err = dbConnection(cfg)
 	if err != nil {
 		logrus.Fatal(err)
 	}
-	defer ClosePool(cfg, repos)
+	defer closePool(cfg, repos)
 
 	client := redis.NewClient(&redis.Options{
 		Addr: "localhost:6379",
 	})
-	defer client.Close()
+	defer logrus.Error(client.Close())
 
 	rds := &repository.Redis{Client: *client}
 
-	rds.RedisStreamInit(context.Background())
+	logrus.Fatal(rds.RedisStreamInit(context.Background()))
 	rds.ConsumeUser("example")
 
 	userService := service.NewUserServiceClassic(repos, rds, rds, cfg.JwtKey)
@@ -159,9 +171,9 @@ func main() {
 	e.Logger.Fatal(e.Start(":12345"))
 }
 
-func DBConnection(Cfg *config.Config) (service.UserClassicRepository, error) {
+func dbConnection(Cfg *config.Config) (service.UserClassicRepository, error) {
 	switch Cfg.CurrentDB {
-	case "postgres":
+	case postgresDB:
 		pool, err := pgxpool.New(context.Background(), Cfg.PostgresURL)
 		if err != nil {
 			return nil, fmt.Errorf("invalid configuration data: %v", err)
@@ -170,7 +182,7 @@ func DBConnection(Cfg *config.Config) (service.UserClassicRepository, error) {
 			return nil, fmt.Errorf("database not responding: %v", err)
 		}
 		return repository.NewPostgresRepository(pool), nil
-	case "mongo":
+	case mongoDB:
 		client, err := mongo.Connect(context.Background(), options.Client().ApplyURI(Cfg.MongoURL))
 		if err != nil {
 			return nil, fmt.Errorf("mongoDB connection: %v", err)
@@ -184,14 +196,14 @@ func DBConnection(Cfg *config.Config) (service.UserClassicRepository, error) {
 	return nil, nil
 }
 
-func ClosePool(Cfg *config.Config, r interface{}) {
+func closePool(Cfg *config.Config, r interface{}) {
 	switch Cfg.CurrentDB {
-	case "postgres":
+	case postgresDB:
 		pr := r.(repository.PUser)
 		if pr.Pool != nil {
 			pr.Pool.Close()
 		}
-	case "mongo":
+	case mongoDB:
 		pr := r.(repository.MUser)
 		if pr.Client != nil {
 			err := pr.Client.Disconnect(context.Background())

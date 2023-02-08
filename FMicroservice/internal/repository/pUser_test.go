@@ -88,8 +88,8 @@ func TestMain(m *testing.M) {
 	}); err != nil {
 		logrus.Fatalf("Could not connect to database: %s", err)
 	}
-	db.Exec(ctx, "insert into roles (name) values ('admin')")
-	db.Exec(ctx, "insert into roles (name) values ('user')")
+	logrus.Fatal(db.Exec(ctx, "insert into roles (name) values ('admin')"))
+	logrus.Fatal(db.Exec(ctx, "insert into roles (name) values ('user')"))
 	code := m.Run()
 
 	if err := pool.Purge(resource); err != nil {
@@ -156,7 +156,7 @@ func TestPUser_GetUserByLogin(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	//Non-existent data
+	// Non-existent data
 
 	for _, u := range testValidData {
 		_, err = prps.Pool.Exec(ctx, "delete from users where login=$1 ", u.Login)
@@ -192,7 +192,7 @@ func TestPUser_UpdateUser(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	//Invalid data
+	// Invalid data
 
 	_, err = prps.Pool.Exec(ctx, "delete from users where login=$1 ", &testValidData[0].Login)
 	require.NoError(t, err)
@@ -204,7 +204,7 @@ func TestPUser_UpdateUser(t *testing.T) {
 	_, err = prps.Pool.Exec(ctx, "delete from users where login=$1 ", &testValidData[0].Login)
 	require.NoError(t, err)
 
-	//Non-existent data
+	// Non-existent data
 
 	for _, u := range testValidData {
 		_, err = prps.Pool.Exec(ctx, "delete from users where login=$1 ", u.Login)
@@ -240,7 +240,7 @@ func TestPUser_RefreshUser(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	//Non-existent data
+	// Non-existent data
 
 	for _, u := range testValidData {
 		_, err = prps.Pool.Exec(ctx, "delete from users where login=$1 ", u.Login)
@@ -274,8 +274,7 @@ func TestPUser_DeleteUser(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	//Non-existent data
-
+	// Non-existent data
 	for _, u := range testValidData {
 		_, err = prps.Pool.Exec(ctx, "delete from users where login=$1 ", u.Login)
 		require.NoError(t, err)

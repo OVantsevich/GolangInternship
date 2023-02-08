@@ -3,12 +3,13 @@ package handler
 import (
 	"context"
 	"fmt"
+	"os"
+	"testing"
+
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/ory/dockertest/v3"
 	"github.com/ory/dockertest/v3/docker"
 	"github.com/sirupsen/logrus"
-	"os"
-	"testing"
 )
 
 var (
@@ -18,10 +19,6 @@ var (
 	TestPgPort          = "11111"
 	TestPgContainerName = "postgres"
 )
-
-var MongoURL = "mongodb://mongo:mongo@localhost:27017"
-var JwtKey = "JWTest"
-
 var postgresPool *pgxpool.Pool
 
 func TestMain(m *testing.M) {
@@ -79,7 +76,6 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		logrus.Fatalf("Could not connect to db %s", err)
 	}
-	//handlerTest = NewUserHandlerClassic()
 
 	code := m.Run()
 

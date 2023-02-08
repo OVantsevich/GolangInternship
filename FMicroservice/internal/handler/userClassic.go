@@ -2,16 +2,20 @@
 package handler
 
 import (
-	"GolangInternship/FMicroservice/internal/model"
-	"GolangInternship/FMicroservice/internal/service"
 	"context"
 	"fmt"
+	"net/http"
+
+	"GolangInternship/FMicroservice/internal/model"
+	"GolangInternship/FMicroservice/internal/service"
+
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/labstack/echo/v4"
 	"github.com/sirupsen/logrus"
-	"net/http"
 )
 
+// UserClassicService service interface for user handler
+//
 //go:generate mockery --name=UserClassicService --case=underscore --output=./mocks
 type UserClassicService interface {
 	Signup(ctx context.Context, user *model.User) (string, string, *model.User, error)
@@ -23,20 +27,22 @@ type UserClassicService interface {
 	GetByLogin(ctx context.Context, login string) (*model.User, error)
 }
 
+// UserClassic handler
 type UserClassic struct {
 	s UserClassicService
 }
 
-type TokenResponse struct {
+type tokenResponse struct {
 	AccessToken  string `json:"access" example:"eyJhbGciOiJIUzI1NiIsInR5cC6IkpXVCJ9.eyJsb2dpbiI6InRc3QxIiwiZXhwIjoxNjc1MDgwNjE3fQ.OIt5MGzpbo1vZT5aNRvPwZCpU_tx-lisT2W2eyh78"`
 	RefreshToken string `json:"refresh" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJsb2dpiI6InRlc3QxIiwiZXhwIjoxNjc1MTE1NzE3fQ.UJ0HF6D4Hb7cLdDfQxg3Byzvb8hWEXwK2RaNWDH54"`
 }
 
-type SignupResponse struct {
+type signupResponse struct {
 	*model.User
-	*TokenResponse
+	*tokenResponse
 }
 
+// NewUserHandlerClassic new user handler
 func NewUserHandlerClassic(s UserClassicService) *UserClassic {
 	return &UserClassic{s: s}
 }
@@ -48,7 +54,7 @@ func NewUserHandlerClassic(s UserClassicService) *UserClassic {
 // @Accept       json
 // @Produce      json
 // @Param        body	body     model.User  true  "New user object"
-// @Success      201	{object}	SignupResponse
+// @Success      201	{object}	signupResponse
 // @Failure      400
 // @Failure      500
 // @Router       /signup [post]
@@ -78,9 +84,9 @@ func (h *UserClassic) Signup(c echo.Context) (err error) {
 	}
 
 	return c.JSON(http.StatusCreated,
-		SignupResponse{
+		signupResponse{
 			user2,
-			&TokenResponse{
+			&tokenResponse{
 				AccessToken:  accessToken,
 				RefreshToken: refreshToken,
 			}})
@@ -93,7 +99,7 @@ func (h *UserClassic) Signup(c echo.Context) (err error) {
 // @Accept       json
 // @Produce      json
 // @Param        body		body    model.User	true  "login and password"
-// @Success      201	{object}	TokenResponse
+// @Success      201	{object}	tokenResponse
 // @Failure      500
 // @Router       /login [post]
 func (h *UserClassic) Login(c echo.Context) (err error) {
@@ -112,7 +118,7 @@ func (h *UserClassic) Login(c echo.Context) (err error) {
 		}
 	}
 
-	return c.JSON(http.StatusOK, TokenResponse{
+	return c.JSON(http.StatusOK, tokenResponse{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 	})
@@ -123,7 +129,7 @@ func (h *UserClassic) Login(c echo.Context) (err error) {
 // @Summary      Refresh accessToken and refreshToken
 // @Tags         users
 // @Produce      json
-// @Success      201	{object}	TokenResponse
+// @Success      201	{object}	tokenResponse
 // @Failure      500
 // @Router       /refresh [get]
 // @Security Bearer
@@ -139,7 +145,7 @@ func (h *UserClassic) Refresh(c echo.Context) (err error) {
 		}
 	}
 
-	return c.JSON(http.StatusOK, TokenResponse{
+	return c.JSON(http.StatusOK, tokenResponse{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 	})
@@ -233,7 +239,7 @@ func (h *UserClassic) UserByLogin(c echo.Context) (err error) {
 	return c.JSON(http.StatusOK, user)
 }
 
-func tokenFromContext(c echo.Context) (tokenRaw string, login string) {
+func tokenFromContext(c echo.Context) (tokenRaw, login string) {
 	user := c.Get("user").(*jwt.Token)
 	claims := user.Claims
 	return user.Raw, claims.(*service.CustomClaims).Login

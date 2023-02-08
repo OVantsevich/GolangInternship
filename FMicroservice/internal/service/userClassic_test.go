@@ -1,14 +1,16 @@
 package service
 
 import (
-	"GolangInternship/FMicroservice/internal/model"
-	"GolangInternship/FMicroservice/internal/service/mocks"
 	"context"
 	"fmt"
+	"testing"
+
+	"GolangInternship/FMicroservice/internal/model"
+	"GolangInternship/FMicroservice/internal/service/mocks"
+
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 var service *UserClassic

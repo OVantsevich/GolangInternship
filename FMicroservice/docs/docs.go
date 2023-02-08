@@ -120,7 +120,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/handler.TokenResponse"
+                            "$ref": "#/definitions/handler.tokenResponse"
                         }
                     },
                     "500": {
@@ -147,7 +147,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/handler.TokenResponse"
+                            "$ref": "#/definitions/handler.tokenResponse"
                         }
                     },
                     "500": {
@@ -357,7 +357,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handler.TokenResponse": {
+        "handler.tokenResponse": {
             "type": "object",
             "properties": {
                 "access": {

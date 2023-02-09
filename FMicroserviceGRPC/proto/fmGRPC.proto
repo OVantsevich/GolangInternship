@@ -8,6 +8,9 @@ service UserService{
   rpc Update(UpdateRequest)returns(UpdateResponse);
   rpc Delete(Request)returns(DeleteResponse);
   rpc UserByLogin(UserByLoginRequest)returns(UserByLoginResponse);
+
+  rpc Download(DownloadRequest) returns(stream DownloadResponse);
+  rpc Upload(UpdateRequest) returns(stream UploadResponse);
 }
 
 message SignupRequest{
@@ -71,6 +74,30 @@ message UserByLoginResponse{
 }
 
 message Response{}
+
+
+message DownloadRequest{
+  string id = 1;
+}
+
+message DownloadResponse{
+  bytes chunk = 1;
+}
+
+message UploadRequest{
+  oneof data {
+    bytes chunk = 1;
+    FileInfo info = 2;
+  };
+}
+
+message UploadResponse{
+  string id = 1;
+}
+
+message FileInfo{
+  string fileType = 1;
+}
 
 message User{
   string id = 1;

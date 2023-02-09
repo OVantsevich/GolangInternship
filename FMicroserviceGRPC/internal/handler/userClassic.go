@@ -6,7 +6,6 @@ import (
 	pr "GolangInternship/FMicroserviceGRPC/proto"
 	"context"
 	"fmt"
-	"github.com/golang-jwt/jwt/v4"
 	"github.com/sirupsen/logrus"
 )
 
@@ -95,11 +94,7 @@ func (h *UserClassic) Refresh(ctx context.Context, request *pr.RefreshRequest) (
 // Update handler update
 func (h *UserClassic) Update(ctx context.Context, request *pr.UpdateRequest) (response *pr.UpdateResponse, err error) {
 	var claims = ctx.Value("user").(*service.CustomClaims)
-	if err != nil {
-		err = fmt.Errorf("userHandler - Update - verify: %w", err)
-		logrus.Error(err)
-		return
-	}
+
 	user := &model.User{
 		Email: request.Email,
 		Name:  request.Name,
@@ -120,11 +115,6 @@ func (h *UserClassic) Update(ctx context.Context, request *pr.UpdateRequest) (re
 // Delete handler delete
 func (h *UserClassic) Delete(ctx context.Context, _ *pr.Request) (response *pr.DeleteResponse, err error) {
 	var claims = ctx.Value("user").(*service.CustomClaims)
-	if err != nil {
-		err = fmt.Errorf("userHandler - Delete - verify: %w", err)
-		logrus.Error(err)
-		return
-	}
 
 	response = &pr.DeleteResponse{}
 	err = h.s.Delete(ctx, claims.Login)
@@ -141,11 +131,7 @@ func (h *UserClassic) Delete(ctx context.Context, _ *pr.Request) (response *pr.D
 // UserByLogin handler user by login
 func (h *UserClassic) UserByLogin(ctx context.Context, request *pr.UserByLoginRequest) (response *pr.UserByLoginResponse, err error) {
 	var claims = ctx.Value("user").(*service.CustomClaims)
-	if err != nil {
-		err = fmt.Errorf("userHandler - UserByLogin - verify: %w", err)
-		logrus.Error(err)
-		return
-	}
+
 	if claims.Role != "admin" {
 		err = fmt.Errorf("access denied")
 		logrus.Error(err)
@@ -172,19 +158,8 @@ func (h *UserClassic) UserByLogin(ctx context.Context, request *pr.UserByLoginRe
 	return
 }
 
-func (h *UserClassic) verify(token string) (claims *service.CustomClaims, err error) {
-	claims = &service.CustomClaims{}
-
-	_, err = jwt.ParseWithClaims(
-		token,
-		claims,
-		func(token *jwt.Token) (interface{}, error) {
-			return []byte(h.jwtKey), nil
-		},
-	)
-	if err != nil {
-		err = fmt.Errorf("invalid token: %w", err)
-	}
+// Upload handler upload
+func (h *UserClassic) Upload(ctx context.Context, request *pr.UploadRequest) (response *pr.UploadResponse, err error) {
 
 	return
 }

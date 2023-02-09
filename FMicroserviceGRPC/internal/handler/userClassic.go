@@ -94,20 +94,16 @@ func (h *UserClassic) Refresh(ctx context.Context, request *pr.RefreshRequest) (
 
 // Update handler update
 func (h *UserClassic) Update(ctx context.Context, request *pr.UpdateRequest) (response *pr.UpdateResponse, err error) {
-	var claims *service.CustomClaims
-	claims, err = h.verify(request.AccessToken)
+	var claims = ctx.Value("user").(*service.CustomClaims)
 	if err != nil {
 		err = fmt.Errorf("userHandler - Update - verify: %w", err)
 		logrus.Error(err)
 		return
 	}
-
 	user := &model.User{
-		Login:    request.User.Login,
-		Email:    request.User.Email,
-		Password: request.User.Password,
-		Name:     request.User.Name,
-		Age:      int(request.User.Age),
+		Email: request.Email,
+		Name:  request.Name,
+		Age:   int(request.Age),
 	}
 	response = &pr.UpdateResponse{}
 	err = h.s.Update(ctx, claims.Login, user)
@@ -122,9 +118,8 @@ func (h *UserClassic) Update(ctx context.Context, request *pr.UpdateRequest) (re
 }
 
 // Delete handler delete
-func (h *UserClassic) Delete(ctx context.Context, request *pr.DeleteRequest) (response *pr.DeleteResponse, err error) {
-	var claims *service.CustomClaims
-	claims, err = h.verify(request.AccessToken)
+func (h *UserClassic) Delete(ctx context.Context, _ *pr.Request) (response *pr.DeleteResponse, err error) {
+	var claims = ctx.Value("user").(*service.CustomClaims)
 	if err != nil {
 		err = fmt.Errorf("userHandler - Delete - verify: %w", err)
 		logrus.Error(err)
@@ -145,8 +140,7 @@ func (h *UserClassic) Delete(ctx context.Context, request *pr.DeleteRequest) (re
 
 // UserByLogin handler user by login
 func (h *UserClassic) UserByLogin(ctx context.Context, request *pr.UserByLoginRequest) (response *pr.UserByLoginResponse, err error) {
-	var claims *service.CustomClaims
-	claims, err = h.verify(request.AccessToken)
+	var claims = ctx.Value("user").(*service.CustomClaims)
 	if err != nil {
 		err = fmt.Errorf("userHandler - UserByLogin - verify: %w", err)
 		logrus.Error(err)
@@ -160,7 +154,7 @@ func (h *UserClassic) UserByLogin(ctx context.Context, request *pr.UserByLoginRe
 
 	response = &pr.UserByLoginResponse{}
 	var user *model.User
-	user, err = h.s.GetByLogin(ctx, claims.Login)
+	user, err = h.s.GetByLogin(ctx, request.Login)
 	if err != nil {
 		err = fmt.Errorf("userHandler - UserByLogin - GetByLogin: %w", err)
 		logrus.Error(err)

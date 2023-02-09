@@ -55,7 +55,6 @@ func consumer(ch chan int) {
 
 	conn.SetReadDeadline(time.Now().Add(1 * time.Second))
 	batch := conn.ReadBatch(10e3, 1e6)
-
 	b := make([]byte, 10e4)
 	pgxBatch := &pgx.Batch{}
 	for {

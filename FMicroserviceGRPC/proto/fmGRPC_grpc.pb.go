@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.2.0
 // - protoc             v3.12.4
-// source: fmGRPC.proto
+// source: proto/fmGRPC.proto
 
 package __
 
@@ -26,7 +26,7 @@ type UserServiceClient interface {
 	Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*LoginResponse, error)
 	Refresh(ctx context.Context, in *RefreshRequest, opts ...grpc.CallOption) (*RefreshResponse, error)
 	Update(ctx context.Context, in *UpdateRequest, opts ...grpc.CallOption) (*UpdateResponse, error)
-	Delete(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*DeleteResponse, error)
+	Delete(ctx context.Context, in *Request, opts ...grpc.CallOption) (*DeleteResponse, error)
 	UserByLogin(ctx context.Context, in *UserByLoginRequest, opts ...grpc.CallOption) (*UserByLoginResponse, error)
 }
 
@@ -74,7 +74,7 @@ func (c *userServiceClient) Update(ctx context.Context, in *UpdateRequest, opts 
 	return out, nil
 }
 
-func (c *userServiceClient) Delete(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*DeleteResponse, error) {
+func (c *userServiceClient) Delete(ctx context.Context, in *Request, opts ...grpc.CallOption) (*DeleteResponse, error) {
 	out := new(DeleteResponse)
 	err := c.cc.Invoke(ctx, "/UserService/Delete", in, out, opts...)
 	if err != nil {
@@ -100,7 +100,7 @@ type UserServiceServer interface {
 	Login(context.Context, *LoginRequest) (*LoginResponse, error)
 	Refresh(context.Context, *RefreshRequest) (*RefreshResponse, error)
 	Update(context.Context, *UpdateRequest) (*UpdateResponse, error)
-	Delete(context.Context, *DeleteRequest) (*DeleteResponse, error)
+	Delete(context.Context, *Request) (*DeleteResponse, error)
 	UserByLogin(context.Context, *UserByLoginRequest) (*UserByLoginResponse, error)
 	mustEmbedUnimplementedUserServiceServer()
 }
@@ -121,7 +121,7 @@ func (UnimplementedUserServiceServer) Refresh(context.Context, *RefreshRequest) 
 func (UnimplementedUserServiceServer) Update(context.Context, *UpdateRequest) (*UpdateResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Update not implemented")
 }
-func (UnimplementedUserServiceServer) Delete(context.Context, *DeleteRequest) (*DeleteResponse, error) {
+func (UnimplementedUserServiceServer) Delete(context.Context, *Request) (*DeleteResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
 }
 func (UnimplementedUserServiceServer) UserByLogin(context.Context, *UserByLoginRequest) (*UserByLoginResponse, error) {
@@ -213,7 +213,7 @@ func _UserService_Update_Handler(srv interface{}, ctx context.Context, dec func(
 }
 
 func _UserService_Delete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeleteRequest)
+	in := new(Request)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -225,7 +225,7 @@ func _UserService_Delete_Handler(srv interface{}, ctx context.Context, dec func(
 		FullMethod: "/UserService/Delete",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(UserServiceServer).Delete(ctx, req.(*DeleteRequest))
+		return srv.(UserServiceServer).Delete(ctx, req.(*Request))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -281,5 +281,5 @@ var UserService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "fmGRPC.proto",
+	Metadata: "proto/fmGRPC.proto",
 }

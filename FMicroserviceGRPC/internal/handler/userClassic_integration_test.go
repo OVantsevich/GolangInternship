@@ -348,12 +348,9 @@ func TestUserClassic_Update(t *testing.T) {
 	require.NoError(t, err)
 
 	response, err = handlerTest.Update(context.Background(), &pr.UpdateRequest{
-		User: &pr.User{
-			Email: testSignUpValid[0].Email,
-			Name:  testSignUpValid[0].Name,
-			Age:   testSignUpValid[0].Age,
-		},
-		AccessToken: signupResponse.AccessToken,
+		Email: testSignUpValid[0].Email,
+		Name:  testSignUpValid[0].Name,
+		Age:   testSignUpValid[0].Age,
 	})
 	require.NoError(t, err)
 	require.Equal(t, response.Login, testSignUpValid[0].Login)
@@ -369,12 +366,9 @@ func TestUserClassic_Update(t *testing.T) {
 		require.NoError(t, err)
 
 		_, err = handlerTest.Update(context.Background(), &pr.UpdateRequest{
-			User: &pr.User{
-				Email: user.Email,
-				Name:  user.Name,
-				Age:   user.Age,
-			},
-			AccessToken: signupResponse.AccessToken,
+			Email: user.Email,
+			Name:  user.Name,
+			Age:   user.Age,
 		})
 		require.Error(t, err)
 	}

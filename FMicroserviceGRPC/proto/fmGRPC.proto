@@ -6,7 +6,7 @@ service UserService{
   rpc Login(LoginRequest)returns(LoginResponse){};
   rpc Refresh(RefreshRequest)returns(RefreshResponse);
   rpc Update(UpdateRequest)returns(UpdateResponse);
-  rpc Delete(DeleteRequest)returns(DeleteResponse);
+  rpc Delete(Request)returns(DeleteResponse);
   rpc UserByLogin(UserByLoginRequest)returns(UserByLoginResponse);
 }
 
@@ -29,16 +29,16 @@ message RefreshRequest{
 }
 
 message UpdateRequest{
-  User user = 1;
-  string accessToken = 2;
+  string email = 1;
+  string name = 2;
+  int32 age = 3;
 }
 
-message DeleteRequest{
-  string accessToken = 1;
+message Request{
 }
 
 message UserByLoginRequest{
-  string accessToken = 1;
+  string login = 1;
 }
 
 

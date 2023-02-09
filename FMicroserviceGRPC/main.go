@@ -10,33 +10,65 @@ import (
 	"context"
 	"fmt"
 	"github.com/go-redis/redis/v8"
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"google.golang.org/grpc"
-	"log"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 	"net"
 )
 
-func (interceptor *AuthInterceptor) Stream() grpc.StreamServerInterceptor {
-	return func(
-		ctx context.Context,
-		desc *grpc.StreamDesc,
-		cc *grpc.ClientConn,
-		method string,
-		streamer grpc.Streamer,
-		opts ...grpc.CallOption,
-	) (grpc.ClientStream, error) {
-		log.Printf("--> stream interceptor: %s", method)
+func jwtAuth(keyFunc func(token *jwt.Token) (interface{}, error)) grpc.ServerOption {
+	return grpc.UnaryInterceptor(func(ctx context.Context,
+		req interface{},
+		info *grpc.UnaryServerInfo,
+		handler grpc.UnaryHandler) (interface{}, error) {
 
-		if interceptor.authMethods[method] {
-			return streamer(interceptor.attachToken(ctx), desc, cc, method, opts...)
+		if info.FullMethod != "/UserService/Signup" && info.FullMethod != "/UserService/Login" && info.FullMethod != "/UserService/Refresh" {
+			md, ok := metadata.FromIncomingContext(ctx)
+			if !ok {
+				return nil, status.Errorf(codes.InvalidArgument, "Retrieving metadata is failed")
+			}
+
+			authHeader, ok := md["authorization"]
+			if !ok {
+				return nil, status.Errorf(codes.Unauthenticated, "Authorization token is not supplied")
+			}
+
+			token := authHeader[0]
+
+			claims, err := verify(token, keyFunc)
+			if err != nil {
+				return nil, err
+			}
+			ctx = context.WithValue(ctx, "user", claims)
 		}
 
-		return streamer(ctx, desc, cc, method, opts...)
-	}
+		h, err := handler(ctx, req)
+
+		return h, err
+	})
 }
+
+func verify(token string, keyFunc func(token *jwt.Token) (interface{}, error)) (claims *service.CustomClaims, err error) {
+	claims = &service.CustomClaims{}
+
+	_, err = jwt.ParseWithClaims(
+		token,
+		claims,
+		keyFunc,
+	)
+	if err != nil {
+		err = fmt.Errorf("invalid token: %w", err)
+	}
+
+	return
+}
+
 func main() {
 	listen, err := net.Listen("tcp", "localhost:12344")
 	if err != nil {
@@ -62,15 +94,13 @@ func main() {
 
 	rds := &repository.Redis{Client: *client}
 
-	err = rds.RedisStreamInit(context.Background())
-	if err != nil {
-		logrus.Fatal(err)
-	}
 	rds.ConsumeUser("example")
 
 	userService := service.NewUserServiceClassic(repos, rds, rds, cfg.JwtKey)
 
-	ns := grpc.NewServer(grpc.StreamInterceptor())
+	ns := grpc.NewServer(jwtAuth(func(token *jwt.Token) (interface{}, error) {
+		return []byte(cfg.JwtKey), nil
+	}))
 	server := handler.NewUserHandlerClassic(userService, cfg.JwtKey)
 	pr.RegisterUserServiceServer(ns, server)
 

@@ -127,11 +127,10 @@ func main() {
 	client := redis.NewClient(&redis.Options{
 		Addr: "localhost:6379",
 	})
-	defer logrus.Error(client.Close())
+	defer client.Close()
 
 	rds := &repository.Redis{Client: *client}
 
-	logrus.Fatal(rds.RedisStreamInit(context.Background()))
 	rds.ConsumeUser("example")
 
 	userService := service.NewUserServiceClassic(repos, rds, rds, cfg.JwtKey)

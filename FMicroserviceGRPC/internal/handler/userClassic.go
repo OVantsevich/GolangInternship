@@ -1,11 +1,18 @@
 package handler
 
 import (
+	"bytes"
+	"context"
+	"fmt"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	"io"
+	"time"
+
 	"GolangInternship/FMicroserviceGRPC/internal/model"
 	"GolangInternship/FMicroserviceGRPC/internal/service"
 	pr "GolangInternship/FMicroserviceGRPC/proto"
-	"context"
-	"fmt"
+
 	"github.com/sirupsen/logrus"
 )
 
@@ -22,17 +29,27 @@ type UserClassicService interface {
 	GetByLogin(ctx context.Context, login string) (*model.User, error)
 }
 
+// FileService service interface for user handler
+//
+//go:generate mockery --name=FileService --case=underscore --output=./mocks
+type FileService interface {
+	StoreFile(fileType string, fileData bytes.Buffer) (string, error)
+}
+
+// max Image Size
+const maxImageSize = 1 << 25
+
 // UserClassic handler
 type UserClassic struct {
 	pr.UnimplementedUserServiceServer
 	s      UserClassicService
+	file   FileService
 	jwtKey string
 }
 
 // NewUserHandlerClassic new user handler
-
-func NewUserHandlerClassic(s UserClassicService, key string) *UserClassic {
-	return &UserClassic{s: s, jwtKey: key}
+func NewUserHandlerClassic(s UserClassicService, file FileService, key string) *UserClassic {
+	return &UserClassic{s: s, file: file, jwtKey: key}
 }
 
 // Signup handler signup
@@ -159,7 +176,73 @@ func (h *UserClassic) UserByLogin(ctx context.Context, request *pr.UserByLoginRe
 }
 
 // Upload handler upload
-func (h *UserClassic) Upload(ctx context.Context, request *pr.UploadRequest) (response *pr.UploadResponse, err error) {
+func (h *UserClassic) Upload(request pr.UserService_UploadServer) (err error) {
+	req, err := request.Recv()
+	if err != nil {
+		err = status.Errorf(codes.Unknown, "cannot receive image info: %v", err)
+		logrus.Error(err)
+		return err
+	}
+	fileType := req.GetInfo().GetFileType()
+
+	startTime := time.Now()
+	logrus.Infof("start time:%s", startTime)
+
+	imageData := bytes.Buffer{}
+	imageSize := 0
+
+	for {
+		req, err = request.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			err = status.Errorf(codes.Unknown, "cannot receive chunk data: %v", err)
+			logrus.Error(err)
+			return err
+		}
+
+		chunk := req.GetChunk()
+		size := len(chunk)
+
+		imageSize += size
+		if imageSize > maxImageSize {
+			err = status.Errorf(codes.InvalidArgument, "image is too large: %d > %d", imageSize, maxImageSize)
+			logrus.Error(err)
+			return err
+		}
+		_, err = imageData.Write(chunk)
+		if err != nil {
+			err = status.Errorf(codes.Internal, "cannot write chunk data: %v", err)
+			logrus.Error(err)
+			return err
+		}
+
+		imageID, err := h.file.StoreFile(fileType, imageData)
+		if err != nil {
+			err = status.Errorf(codes.Internal, "cannot save image to the store: %v", err)
+			logrus.Error(err)
+			return err
+		}
+
+		res := &pr.UploadResponse{
+			Id: imageID,
+		}
+
+		err = request.SendAndClose(res)
+		if err != nil {
+			err = status.Errorf(codes.Unknown, "cannot send response: %v", err)
+			logrus.Error(err)
+			return err
+		}
+
+		return nil
+	}
+	return nil
+}
+
+// Download handler upload
+func (h *UserClassic) Download(ctx context.Context, request *pr.DownloadRequest) (response *pr.DownloadResponse, err error) {
 
 	return
 }

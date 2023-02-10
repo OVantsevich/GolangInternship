@@ -101,7 +101,8 @@ func main() {
 	ns := grpc.NewServer(jwtAuth(func(token *jwt.Token) (interface{}, error) {
 		return []byte(cfg.JwtKey), nil
 	}))
-	server := handler.NewUserHandlerClassic(userService, cfg.JwtKey)
+	fileService := service.NewFile("fileStore")
+	server := handler.NewUserHandlerClassic(userService, fileService, cfg.JwtKey)
 	pr.RegisterUserServiceServer(ns, server)
 
 	if err = ns.Serve(listen); err != nil {

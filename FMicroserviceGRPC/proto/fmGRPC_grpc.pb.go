@@ -28,8 +28,7 @@ type UserServiceClient interface {
 	Update(ctx context.Context, in *UpdateRequest, opts ...grpc.CallOption) (*UpdateResponse, error)
 	Delete(ctx context.Context, in *Request, opts ...grpc.CallOption) (*DeleteResponse, error)
 	UserByLogin(ctx context.Context, in *UserByLoginRequest, opts ...grpc.CallOption) (*UserByLoginResponse, error)
-	Download(ctx context.Context, in *DownloadRequest, opts ...grpc.CallOption) (UserService_DownloadClient, error)
-	Upload(ctx context.Context, in *UpdateRequest, opts ...grpc.CallOption) (UserService_UploadClient, error)
+	Upload(ctx context.Context, opts ...grpc.CallOption) (UserService_UploadClient, error)
 }
 
 type userServiceClient struct {
@@ -94,55 +93,18 @@ func (c *userServiceClient) UserByLogin(ctx context.Context, in *UserByLoginRequ
 	return out, nil
 }
 
-func (c *userServiceClient) Download(ctx context.Context, in *DownloadRequest, opts ...grpc.CallOption) (UserService_DownloadClient, error) {
-	stream, err := c.cc.NewStream(ctx, &UserService_ServiceDesc.Streams[0], "/UserService/Download", opts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &userServiceDownloadClient{stream}
-	if err := x.ClientStream.SendMsg(in); err != nil {
-		return nil, err
-	}
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
-	return x, nil
-}
-
-type UserService_DownloadClient interface {
-	Recv() (*DownloadResponse, error)
-	grpc.ClientStream
-}
-
-type userServiceDownloadClient struct {
-	grpc.ClientStream
-}
-
-func (x *userServiceDownloadClient) Recv() (*DownloadResponse, error) {
-	m := new(DownloadResponse)
-	if err := x.ClientStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
-}
-
-func (c *userServiceClient) Upload(ctx context.Context, in *UpdateRequest, opts ...grpc.CallOption) (UserService_UploadClient, error) {
-	stream, err := c.cc.NewStream(ctx, &UserService_ServiceDesc.Streams[1], "/UserService/Upload", opts...)
+func (c *userServiceClient) Upload(ctx context.Context, opts ...grpc.CallOption) (UserService_UploadClient, error) {
+	stream, err := c.cc.NewStream(ctx, &UserService_ServiceDesc.Streams[0], "/UserService/Upload", opts...)
 	if err != nil {
 		return nil, err
 	}
 	x := &userServiceUploadClient{stream}
-	if err := x.ClientStream.SendMsg(in); err != nil {
-		return nil, err
-	}
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
 	return x, nil
 }
 
 type UserService_UploadClient interface {
-	Recv() (*UploadResponse, error)
+	Send(*UploadRequest) error
+	CloseAndRecv() (*UploadResponse, error)
 	grpc.ClientStream
 }
 
@@ -150,7 +112,14 @@ type userServiceUploadClient struct {
 	grpc.ClientStream
 }
 
-func (x *userServiceUploadClient) Recv() (*UploadResponse, error) {
+func (x *userServiceUploadClient) Send(m *UploadRequest) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *userServiceUploadClient) CloseAndRecv() (*UploadResponse, error) {
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
 	m := new(UploadResponse)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
@@ -168,8 +137,7 @@ type UserServiceServer interface {
 	Update(context.Context, *UpdateRequest) (*UpdateResponse, error)
 	Delete(context.Context, *Request) (*DeleteResponse, error)
 	UserByLogin(context.Context, *UserByLoginRequest) (*UserByLoginResponse, error)
-	Download(*DownloadRequest, UserService_DownloadServer) error
-	Upload(*UpdateRequest, UserService_UploadServer) error
+	Upload(UserService_UploadServer) error
 	mustEmbedUnimplementedUserServiceServer()
 }
 
@@ -195,10 +163,7 @@ func (UnimplementedUserServiceServer) Delete(context.Context, *Request) (*Delete
 func (UnimplementedUserServiceServer) UserByLogin(context.Context, *UserByLoginRequest) (*UserByLoginResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UserByLogin not implemented")
 }
-func (UnimplementedUserServiceServer) Download(*DownloadRequest, UserService_DownloadServer) error {
-	return status.Errorf(codes.Unimplemented, "method Download not implemented")
-}
-func (UnimplementedUserServiceServer) Upload(*UpdateRequest, UserService_UploadServer) error {
+func (UnimplementedUserServiceServer) Upload(UserService_UploadServer) error {
 	return status.Errorf(codes.Unimplemented, "method Upload not implemented")
 }
 func (UnimplementedUserServiceServer) mustEmbedUnimplementedUserServiceServer() {}
@@ -322,37 +287,13 @@ func _UserService_UserByLogin_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
-func _UserService_Download_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(DownloadRequest)
-	if err := stream.RecvMsg(m); err != nil {
-		return err
-	}
-	return srv.(UserServiceServer).Download(m, &userServiceDownloadServer{stream})
-}
-
-type UserService_DownloadServer interface {
-	Send(*DownloadResponse) error
-	grpc.ServerStream
-}
-
-type userServiceDownloadServer struct {
-	grpc.ServerStream
-}
-
-func (x *userServiceDownloadServer) Send(m *DownloadResponse) error {
-	return x.ServerStream.SendMsg(m)
-}
-
 func _UserService_Upload_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(UpdateRequest)
-	if err := stream.RecvMsg(m); err != nil {
-		return err
-	}
-	return srv.(UserServiceServer).Upload(m, &userServiceUploadServer{stream})
+	return srv.(UserServiceServer).Upload(&userServiceUploadServer{stream})
 }
 
 type UserService_UploadServer interface {
-	Send(*UploadResponse) error
+	SendAndClose(*UploadResponse) error
+	Recv() (*UploadRequest, error)
 	grpc.ServerStream
 }
 
@@ -360,8 +301,16 @@ type userServiceUploadServer struct {
 	grpc.ServerStream
 }
 
-func (x *userServiceUploadServer) Send(m *UploadResponse) error {
+func (x *userServiceUploadServer) SendAndClose(m *UploadResponse) error {
 	return x.ServerStream.SendMsg(m)
+}
+
+func (x *userServiceUploadServer) Recv() (*UploadRequest, error) {
+	m := new(UploadRequest)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 // UserService_ServiceDesc is the grpc.ServiceDesc for UserService service.
@@ -398,14 +347,9 @@ var UserService_ServiceDesc = grpc.ServiceDesc{
 	},
 	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "Download",
-			Handler:       _UserService_Download_Handler,
-			ServerStreams: true,
-		},
-		{
 			StreamName:    "Upload",
 			Handler:       _UserService_Upload_Handler,
-			ServerStreams: true,
+			ClientStreams: true,
 		},
 	},
 	Metadata: "proto/fmGRPC.proto",

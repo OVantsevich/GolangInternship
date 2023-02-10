@@ -9,8 +9,7 @@ service UserService{
   rpc Delete(Request)returns(DeleteResponse);
   rpc UserByLogin(UserByLoginRequest)returns(UserByLoginResponse);
 
-  rpc Download(DownloadRequest) returns(stream DownloadResponse);
-  rpc Upload(UpdateRequest) returns(stream UploadResponse);
+  rpc Upload(stream UploadRequest) returns(UploadResponse);
 }
 
 message SignupRequest{

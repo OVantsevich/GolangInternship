@@ -7,12 +7,19 @@ import (
 	"context"
 	"fmt"
 	"github.com/go-redis/redis/v8"
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/ory/dockertest/v3"
 	"github.com/ory/dockertest/v3/docker"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/test/bufconn"
+	"math"
+	"net"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 )
@@ -45,6 +52,7 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		logrus.Fatalf("Could not create network: %s", err)
 	}
+	defer pool.Client.RemoveNetwork(network.ID)
 
 	resource, err := pool.RunWithOptions(&dockertest.RunOptions{
 		Name:       TestPgContainerName,
@@ -62,6 +70,7 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		logrus.Fatalf("Could not start postgres: %s", err)
 	}
+	defer pool.Purge(resource)
 
 	flyway, err := pool.RunWithOptions(&dockertest.RunOptions{
 		Name:       "flyway",
@@ -81,6 +90,7 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		logrus.Fatalf("Could not start flyway: %s", err)
 	}
+	defer pool.Purge(flyway)
 
 	time.Sleep(time.Second * 10)
 
@@ -99,6 +109,7 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		logrus.Fatalf("Could not start redis: %s", err)
 	}
+	defer pool.Purge(cache)
 
 	client := redis.NewClient(&redis.Options{
 		Addr: "localhost:" + cache.GetPort("6379/tcp"),
@@ -107,32 +118,13 @@ func TestMain(m *testing.M) {
 
 	rds := &repository.Redis{Client: *client}
 
-	err = rds.RedisStreamInit(context.Background())
-	if err != nil {
-		logrus.Fatal(err)
-	}
 	rds.ConsumeUser("example")
 
 	userService := service.NewUserServiceClassic(repository.NewPostgresRepository(postgresPool), rds, rds, JwtKey)
-	handlerTest = NewUserHandlerClassic(userService, JwtKey)
+	fileService := service.NewFile("../../fileStore")
+	handlerTest = NewUserHandlerClassic(userService, fileService, JwtKey)
 
 	code := m.Run()
-
-	if err := pool.Purge(resource); err != nil {
-		logrus.Fatalf("Could not purge postgres: %s", err)
-	}
-
-	if err := pool.Purge(flyway); err != nil {
-		logrus.Fatalf("Could not purge flyway: %s", err)
-	}
-
-	if err := pool.Purge(cache); err != nil {
-		logrus.Fatalf("Could not purge cache: %s", err)
-	}
-
-	if err := pool.Client.RemoveNetwork(network.ID); err != nil {
-		logrus.Fatalf("Could not remove network: %s", err)
-	}
 
 	os.Exit(code)
 }
@@ -223,6 +215,23 @@ var testSignUpInvalid = []pr.SignupRequest{
 	},
 }
 
+func verify(token string) (claims *service.CustomClaims, err error) {
+	claims = &service.CustomClaims{}
+
+	_, err = jwt.ParseWithClaims(
+		token,
+		claims,
+		func(token *jwt.Token) (interface{}, error) {
+			return []byte(JwtKey), nil
+		},
+	)
+	if err != nil {
+		err = fmt.Errorf("invalid token: %w", err)
+	}
+
+	return
+}
+
 func TestUserClassic_Signup(t *testing.T) {
 	var response *pr.SignupResponse
 	var err error
@@ -234,7 +243,7 @@ func TestUserClassic_Signup(t *testing.T) {
 		response, err = handlerTest.Signup(context.Background(), &user)
 		require.NoError(t, err)
 
-		_, err = handlerTest.verify(response.AccessToken)
+		_, err = verify(response.AccessToken)
 		require.NoError(t, err)
 	}
 
@@ -269,7 +278,7 @@ func TestUserClassic_Login(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	_, err = handlerTest.verify(response.AccessToken)
+	_, err = verify(response.AccessToken)
 	require.NoError(t, err)
 
 	_, err = postgresPool.Exec(context.Background(), "delete from users where login=$1", testSignUpValid[0].Login)
@@ -312,7 +321,7 @@ func TestUserClassic_Refresh(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	_, err = handlerTest.verify(response.AccessToken)
+	_, err = verify(response.AccessToken)
 	require.NoError(t, err)
 
 	_, err = postgresPool.Exec(context.Background(), "delete from users where login=$1", testSignUpValid[0].Login)
@@ -336,6 +345,7 @@ func TestUserClassic_Refresh(t *testing.T) {
 	})
 	require.Error(t, err)
 }
+
 func TestUserClassic_Update(t *testing.T) {
 	var response *pr.UpdateResponse
 	var signupResponse *pr.SignupResponse
@@ -347,7 +357,11 @@ func TestUserClassic_Update(t *testing.T) {
 	signupResponse, err = handlerTest.Signup(context.Background(), &testSignUpValid[0])
 	require.NoError(t, err)
 
-	response, err = handlerTest.Update(context.Background(), &pr.UpdateRequest{
+	var claims *service.CustomClaims
+	claims, err = verify(signupResponse.AccessToken)
+	ctx := context.WithValue(context.Background(), "user", claims)
+
+	response, err = handlerTest.Update(ctx, &pr.UpdateRequest{
 		Email: testSignUpValid[0].Email,
 		Name:  testSignUpValid[0].Name,
 		Age:   testSignUpValid[0].Age,
@@ -362,14 +376,114 @@ func TestUserClassic_Update(t *testing.T) {
 		_, err = postgresPool.Exec(context.Background(), "delete from users where login=$1", testSignUpValid[0].Login)
 		require.NoError(t, err)
 
-		signupResponse, err = handlerTest.Signup(context.Background(), &testSignUpValid[0])
+		_, err = handlerTest.Signup(context.Background(), &testSignUpValid[0])
 		require.NoError(t, err)
 
-		_, err = handlerTest.Update(context.Background(), &pr.UpdateRequest{
+		claims, err = verify(signupResponse.AccessToken)
+		ctx = context.WithValue(context.Background(), "user", claims)
+		_, err = handlerTest.Update(ctx, &pr.UpdateRequest{
 			Email: user.Email,
 			Name:  user.Name,
 			Age:   user.Age,
 		})
 		require.Error(t, err)
 	}
+}
+
+func server(ctx context.Context) (pr.UserServiceClient, func()) {
+	buffer := 101024 * 1024
+	lis := bufconn.Listen(buffer)
+
+	baseServer := grpc.NewServer()
+	pr.RegisterUserServiceServer(baseServer, handlerTest)
+	go func() {
+		if err := baseServer.Serve(lis); err != nil {
+			logrus.Printf("error serving server: %v", err)
+		}
+	}()
+
+	conn, err := grpc.DialContext(ctx, "",
+		grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) {
+			return lis.Dial()
+		}), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		logrus.Printf("error connecting to server: %v", err)
+	}
+
+	closer := func() {
+		err := lis.Close()
+		if err != nil {
+			logrus.Printf("error closing listener: %v", err)
+		}
+		baseServer.Stop()
+	}
+
+	client := pr.NewUserServiceClient(conn)
+
+	return client, closer
+}
+
+func fileToChunks(file *os.File) ([][]byte, int) {
+
+	fileInfo, _ := file.Stat()
+
+	var fileSize int64 = fileInfo.Size()
+
+	const fileChunk = 1 * (1 << 20)
+
+	totalPartsNum := uint64(math.Ceil(float64(fileSize) / float64(fileChunk)))
+
+	fmt.Printf("Splitting to %d pieces.\n", totalPartsNum)
+
+	var chunks = make([][]byte, totalPartsNum)
+
+	for i := uint64(0); i < totalPartsNum; i++ {
+
+		partSize := int(math.Min(fileChunk, float64(fileSize-int64(i*fileChunk))))
+		chunks[i] = make([]byte, partSize)
+
+		file.Read(chunks[i])
+	}
+	return chunks, int(totalPartsNum)
+}
+
+func TestUserClassic_Upload(t *testing.T) {
+	client, closer := server(context.Background())
+	defer closer()
+
+	type expectation struct {
+		out *pr.UploadResponse
+		err error
+	}
+
+	t.Parallel()
+
+	testImageFolder := "../../fileStore"
+
+	imagePath := fmt.Sprintf("%s/img1.avif", testImageFolder)
+	file, err := os.Open(imagePath)
+	require.NoError(t, err)
+	defer file.Close()
+
+	outClient, err := client.Upload(context.Background())
+
+	outClient.Send(&pr.UploadRequest{
+		Data: &pr.UploadRequest_Info{
+			Info: &pr.FileInfo{
+				FileType: filepath.Ext(imagePath),
+			}}})
+
+	chunks, _ := fileToChunks(file)
+
+	for _, c := range chunks {
+		outClient.Send(&pr.UploadRequest{
+			Data: &pr.UploadRequest_Chunk{
+				Chunk: c,
+			}})
+	}
+
+	out, err := outClient.CloseAndRecv()
+	require.NoError(t, err)
+
+	logrus.Info(out)
 }
